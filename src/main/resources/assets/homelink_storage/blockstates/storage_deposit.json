@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "homelink_storage:block/storage_deposit",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east": {
+      "model": "homelink_storage:block/storage_deposit",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south": {
+      "model": "homelink_storage:block/storage_deposit",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west": {
+      "model": "homelink_storage:block/storage_deposit",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=up": {
+      "model": "homelink_storage:block/storage_deposit",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=down": {
+      "model": "homelink_storage:block/storage_deposit",
+      "y": 0,
+      "uvlock": true
+    }
+  }
+}

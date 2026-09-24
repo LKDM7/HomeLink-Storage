@@ -1,0 +1,120 @@
+{
+  "variants": {
+    "facing=north,wall_mounted=false,lit=false": {
+      "model": "homelink_storage:block/storage_terminal",
+      "uvlock": true
+    },
+    "facing=north,wall_mounted=false,lit=true": {
+      "model": "homelink_storage:block/storage_terminal_lit",
+      "uvlock": true
+    },
+    "facing=north,wall_mounted=true,lit=false": {
+      "model": "homelink_storage:block/storage_terminal_wall",
+      "uvlock": true
+    },
+    "facing=north,wall_mounted=true,lit=true": {
+      "model": "homelink_storage:block/storage_terminal_wall_lit",
+      "uvlock": true
+    },
+    "facing=east,wall_mounted=false,lit=false": {
+      "model": "homelink_storage:block/storage_terminal",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=east,wall_mounted=false,lit=true": {
+      "model": "homelink_storage:block/storage_terminal_lit",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=east,wall_mounted=true,lit=false": {
+      "model": "homelink_storage:block/storage_terminal_wall",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=east,wall_mounted=true,lit=true": {
+      "model": "homelink_storage:block/storage_terminal_wall_lit",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south,wall_mounted=false,lit=false": {
+      "model": "homelink_storage:block/storage_terminal",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=south,wall_mounted=false,lit=true": {
+      "model": "homelink_storage:block/storage_terminal_lit",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=south,wall_mounted=true,lit=false": {
+      "model": "homelink_storage:block/storage_terminal_wall",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=south,wall_mounted=true,lit=true": {
+      "model": "homelink_storage:block/storage_terminal_wall_lit",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west,wall_mounted=false,lit=false": {
+      "model": "homelink_storage:block/storage_terminal",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=west,wall_mounted=false,lit=true": {
+      "model": "homelink_storage:block/storage_terminal_lit",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=west,wall_mounted=true,lit=false": {
+      "model": "homelink_storage:block/storage_terminal_wall",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=west,wall_mounted=true,lit=true": {
+      "model": "homelink_storage:block/storage_terminal_wall_lit",
+      "y": 270,
+      "uvlock": true
+    },
+    "facing=up,wall_mounted=false,lit=false": {
+      "model": "homelink_storage:block/storage_terminal",
+      "x": 270,
+      "uvlock": true
+    },
+    "facing=up,wall_mounted=false,lit=true": {
+      "model": "homelink_storage:block/storage_terminal_lit",
+      "x": 270,
+      "uvlock": true
+    },
+    "facing=up,wall_mounted=true,lit=false": {
+      "model": "homelink_storage:block/storage_terminal_wall",
+      "x": 270,
+      "uvlock": true
+    },
+    "facing=up,wall_mounted=true,lit=true": {
+      "model": "homelink_storage:block/storage_terminal_wall_lit",
+      "x": 270,
+      "uvlock": true
+    },
+    "facing=down,wall_mounted=false,lit=false": {
+      "model": "homelink_storage:block/storage_terminal",
+      "x": 90,
+      "uvlock": true
+    },
+    "facing=down,wall_mounted=false,lit=true": {
+      "model": "homelink_storage:block/storage_terminal_lit",
+      "x": 90,
+      "uvlock": true
+    },
+    "facing=down,wall_mounted=true,lit=false": {
+      "model": "homelink_storage:block/storage_terminal_wall",
+      "x": 90,
+      "uvlock": true
+    },
+    "facing=down,wall_mounted=true,lit=true": {
+      "model": "homelink_storage:block/storage_terminal_wall_lit",
+      "x": 90,
+      "uvlock": true
+    }
+  }
+}

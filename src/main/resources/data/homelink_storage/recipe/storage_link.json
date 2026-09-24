@@ -1,0 +1,27 @@
+{
+    "key":  {
+                "C":  {
+                          "item":  "minecraft:copper_ingot"
+                      },
+                "R":  {
+                          "item":  "minecraft:redstone"
+                      },
+                "Q":  {
+                          "item":  "minecraft:quartz"
+                      },
+                "I":  {
+                          "item":  "minecraft:iron_ingot"
+                      }
+            },
+    "category":  "redstone",
+    "pattern":  [
+                    " C ",
+                    "RQR",
+                    " I "
+                ],
+    "result":  {
+                   "id":  "homelink_storage:storage_link",
+                   "count":  4
+               },
+    "type":  "minecraft:crafting_shaped"
+}

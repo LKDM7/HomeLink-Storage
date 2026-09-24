@@ -1,0 +1,6 @@
+{
+  "parent": "homelink_storage:block/storage_controller",
+  "textures": {
+    "signal": "minecraft:block/sea_lantern"
+  }
+}

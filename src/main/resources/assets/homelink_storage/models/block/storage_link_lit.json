@@ -1,0 +1,7 @@
+{
+  "parent": "homelink_storage:block/storage_link",
+  "textures": {
+    "light": "minecraft:block/sea_lantern",
+    "signal": "minecraft:block/lime_concrete"
+  }
+}

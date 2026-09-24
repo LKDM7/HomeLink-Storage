@@ -1,0 +1,13 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="All Rights Reserved"
+[[mods]]
+modId="storage_validation"
+version="1.0.0"
+displayName="HomeLink Storage Development Verification"
+[[dependencies.storage_validation]]
+modId="homelink_storage"
+type="required"
+versionRange="[0,)"
+ordering="AFTER"
+side="BOTH"

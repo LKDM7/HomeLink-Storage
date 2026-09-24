@@ -1,0 +1,143 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'idea'
+    id 'net.neoforged.moddev' version '2.0.147'
+}
+version = mod_version
+group = mod_group_id
+base { archivesName = mod_id }
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+repositories { mavenCentral() }
+dependencies {
+    implementation "fr.lkdm.homecore:homecore:${homecore_version}"
+}
+sourceSets {
+    verification {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+configurations {
+    verificationImplementation.extendsFrom implementation
+    verificationRuntimeOnly.extendsFrom runtimeOnly
+}
+def withDashboard = providers.gradleProperty('withDashboard').isPresent()
+if (withDashboard) {
+    sourceSets.verification.java.srcDir 'src/dashboardVerification/java'
+    dependencies { verificationImplementation 'fr.lkdm.homelink.dashboard:homelink_dashboard:1.0.0' }
+}
+neoForge {
+    version = project.neo_version
+    addModdingDependenciesTo sourceSets.verification
+    mods {
+        "${mod_id}" { sourceSet sourceSets.main }
+        storage_validation { sourceSet sourceSets.verification }
+    }
+    runs {
+        client { client(); loadedMods = [mods.homelink_storage] }
+        server { server(); programArgument '--nogui'; loadedMods = [mods.homelink_storage] }
+        smoke {
+            client()
+            systemProperty 'storage.smoke', 'true'
+            systemProperty 'storage.dashboardSmoke', withDashboard.toString()
+            if (withDashboard) sourceSet = sourceSets.verification
+            loadedMods = [mods.homelink_storage, mods.storage_validation]
+            gameDirectory = file('build/validation/client')
+        }
+        persistence {
+            type = 'gameTestServer'
+            loadedMods = [mods.homelink_storage, mods.storage_validation]
+            gameDirectory = file('build/validation/persistence')
+            systemProperty 'neoforge.enabledGameTestNamespaces', 'storage_validation'
+            systemProperty 'storage.persistencePass', providers.gradleProperty('persistencePass').getOrElse('read')
+        }
+        configureEach { logLevel = org.slf4j.event.Level.INFO }
+    }
+}
+def persistenceProperties = layout.buildDirectory.file('validation/persistence/server.properties')
+tasks.named('runPersistence') {
+    doFirst {
+        def config = persistenceProperties.get().asFile
+        if (!config.exists()) { config.parentFile.mkdirs(); config.setText('', 'UTF-8') }
+    }
+}
+def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    def values = ['minecraft_version_range', 'neo_version_range', 'loader_version_range',
+                  'mod_id', 'mod_name', 'mod_license', 'mod_version', 'mod_authors', 'mod_description', 'homecore_version_range']
+            .collectEntries { [(it): project.property(it)] }
+    inputs.properties values
+    expand values
+    from 'src/main/templates'
+    into layout.buildDirectory.dir('generated/sources/modMetadata')
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8'; options.release = 21 }
+tasks.withType(Jar).configureEach {
+    from('LICENSE') { into 'META-INF' }
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+tasks.named('check') { dependsOn tasks.named('verificationClasses') }
+def releaseJar = tasks.named('jar', Jar).flatMap { it.archiveFile }
+tasks.register('verifyReleaseJar') {
+    dependsOn tasks.named('jar')
+    inputs.file releaseJar
+    doLast {
+        def archive = new java.util.zip.ZipFile(releaseJar.get().asFile)
+        try {
+            def names = archive.entries().collect { it.name }
+            if (names.any { it.startsWith('fr/lkdm/homecore/') || it.startsWith('fr/lkdm/homelink/dashboard/') || it.startsWith('fr/lkdm/homelink/storage/verification/') }) {
+                throw new GradleException('Dependency or validation classes must not be embedded in Storage.')
+            }
+            for (def path : ['fr/lkdm/homelink/storage/HomeLinkStorage.class', 'META-INF/neoforge.mods.toml',
+                              'fr/lkdm/homelink/storage/blockentity/DepositBlockEntity.class',
+                              'fr/lkdm/homelink/storage/storage/inventory/StorageInsertion.class',
+                              'assets/homelink_storage/blockstates/storage_deposit.json',
+                              'data/homelink_storage/recipe/storage_deposit.json',
+                              'assets/homelink_storage/lang/fr_fr.json', 'assets/homelink_storage/lang/en_us.json']) {
+                if (!names.contains(path)) throw new GradleException("Missing JAR entry: ${path}")
+            }
+            def metadata = archive.getInputStream(archive.getEntry('META-INF/neoforge.mods.toml')).withCloseable { it.getText('UTF-8') }
+            if (!metadata.contains('modId="homecore"') || metadata.contains('${')) throw new GradleException('Invalid HomeCore dependency metadata.')
+        } finally { archive.close() }
+    }
+}
+tasks.named('check') { dependsOn tasks.named('verifyReleaseJar') }
+def smokeOptions = layout.buildDirectory.file('validation/client/options.txt')
+def smokeLog = layout.buildDirectory.file('validation/client/logs/latest.log')
+def smokeLanguage = providers.gradleProperty('smokeLanguage').getOrElse('en_us')
+tasks.named('runSmoke') {
+    doFirst {
+        def options = smokeOptions.get().asFile
+        options.parentFile.mkdirs()
+        options.setText("onboardAccessibility:false\ntutorialStep:none\npauseOnLostFocus:false\nrenderDistance:2\nsimulationDistance:5\nmaxFps:60\nlang:${smokeLanguage}\n", 'UTF-8')
+    }
+    doLast {
+        def log = smokeLog.get().asFile.getText('UTF-8')
+        def markers = ['STORAGE_SMOKE_OK', 'STORAGE_INVENTORY_CHECKS_OK', 'STORAGE_INDEX_CHECKS_OK',
+                       'STORAGE_TERMINAL_CHECKS_OK', 'STORAGE_LOCATE_CHECKS_OK', 'STORAGE_HOMECORE_SERVER_CHECKS_OK',
+                       'STORAGE_HOMECORE_CLIENT_CHECKS_OK', 'STORAGE_ROBUSTNESS_CHECKS_OK', 'STORAGE_PACKET_CHECKS_OK',
+                       'STORAGE_RECIPE_CHECKS_OK', 'STORAGE_COVERAGE_CHECKS_OK', 'STORAGE_MANUAL_CHECKS_OK',
+                       'STORAGE_MANAGEMENT_CHECKS_OK', 'STORAGE_CONTROLLER_CHECKS_OK',
+                       'STORAGE_DOUBLE_CHEST_CHECKS_OK', 'STORAGE_WITHDRAWAL_CHECKS_OK', 'STORAGE_WITHDRAWAL_CLIENT_OK',
+                       'STORAGE_TERMINAL_MOUNT_CHECKS_OK', 'STORAGE_LINK_KEY_CHECKS_OK', 'STORAGE_DEPOSIT_CLIENT_CHECKS_OK']
+        if (withDashboard) markers += 'STORAGE_DASHBOARD_CHECKS_OK'
+        if (markers.any { !log.contains(it) } || log.contains('STORAGE_SMOKE_FAILED')) {
+            throw new GradleException('In-game verification failed: inspect build/validation/client/logs/latest.log')
+        }
+    }
+}
+
+def homecoreJarName = "homecore-${homecore_version}.jar"
+tasks.register('releaseBundle', Sync) {
+    group = 'build'
+    description = 'Collects the release mod and its required HomeCore dependency, with installation docs.'
+    dependsOn tasks.named('build')
+    into layout.buildDirectory.dir('release')
+    from(releaseJar)
+    from(configurations.runtimeClasspath.filter { it.name == homecoreJarName })
+    from('README.md', 'LICENSE')
+    from('docs') { into 'docs' }
+}

@@ -1,0 +1,40 @@
+pluginManagement {
+    repositories {
+        mavenLocal()
+        gradlePluginPortal()
+        maven { url = 'https://maven.neoforged.net/releases' }
+    }
+}
+
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+}
+
+rootProject.name = 'HomeLink-Storage'
+def homecoreDir = file(providers.gradleProperty('homecore_dir').getOrElse('../HomeCore'))
+if (!new File(homecoreDir, 'settings.gradle').isFile()) {
+    throw new GradleException('Clone https://github.com/LKDM7/HomeCore next to this project or set -Phomecore_dir=<checkout>. See README.md.')
+}
+def homecoreProperties = new Properties()
+new File(homecoreDir, 'gradle.properties').withInputStream { homecoreProperties.load(it) }
+def expectedHomecore = providers.gradleProperty('homecore_version').get()
+if (homecoreProperties.getProperty('mod_version') != expectedHomecore || homecoreProperties.getProperty('minecraft_version') != '1.21.1') {
+    throw new GradleException("HomeCore checkout must target Minecraft 1.21.1 and version ${expectedHomecore}.")
+}
+includeBuild(homecoreDir) {
+    dependencySubstitution {
+        substitute module('fr.lkdm.homecore:homecore') using project(':')
+    }
+}
+// Dashboard is an optional, real integration-test client, never a production dependency.
+if (providers.gradleProperty('withDashboard').isPresent()) {
+    def dashboardDir = file(providers.gradleProperty('dashboard_dir').getOrElse('../HomeLink-Dashboard'))
+    if (!new File(dashboardDir, 'settings.gradle').isFile()) {
+        throw new GradleException('Clone HomeLink-Dashboard next to this project or set -Pdashboard_dir=<checkout>.')
+    }
+    includeBuild(dashboardDir) {
+        dependencySubstitution {
+            substitute module('fr.lkdm.homelink.dashboard:homelink_dashboard') using project(':')
+        }
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "key":  {
+                "C":  {
+                          "item":  "minecraft:copper_ingot"
+                      },
+                "R":  {
+                          "item":  "minecraft:redstone"
+                      },
+                "Q":  {
+                          "item":  "minecraft:comparator"
+                      },
+                "I":  {
+                          "item":  "minecraft:iron_ingot"
+                      }
+            },
+    "category":  "redstone",
+    "pattern":  [
+                    "ICI",
+                    "RQR",
+                    "ICI"
+                ],
+    "result":  {
+                   "id":  "homelink_storage:storage_controller",
+                   "count":  1
+               },
+    "type":  "minecraft:crafting_shaped"
+}
