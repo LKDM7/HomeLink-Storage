@@ -28,8 +28,9 @@ public final class RecipeChecks {
         recipe(player, "storage_link", List.of(Items.AIR, copper, Items.AIR, redstone, board, redstone, Items.AIR, iron, Items.AIR), StorageRegistries.LINK.get().asItem(), 4);
         recipe(player, "storage_repeater", List.of(Items.AIR, board, Items.AIR, redstone, Items.REPEATER, redstone, iron, iron, iron), StorageRegistries.REPEATER.get().asItem(), 1);
         recipe(player, "storage_deposit", List.of(Items.AIR, Items.CHEST, Items.AIR, redstone, Items.HOPPER, redstone, Items.AIR, board, Items.AIR), StorageRegistries.DEPOSIT.get().asItem(), 1);
+        recipe(player, "storage_overflow", List.of(Items.AIR, board, Items.AIR, Items.CHEST, chip, Items.CHEST, iron, iron, iron), StorageRegistries.OVERFLOW.get().asItem(), 1);
         gestures(player);
-        LogUtils.getLogger().info("STORAGE_RECIPE_CHECKS_OK recipes=5 matches=true results=true binding_gesture=true unauthorized_binding_denied=true");
+        LogUtils.getLogger().info("STORAGE_RECIPE_CHECKS_OK recipes=6 matches=true results=true binding_gesture=true unauthorized_binding_denied=true");
     }
 
     private static void recipe(ServerPlayer player, String path, List<Item> ingredients, Item result, int count) {

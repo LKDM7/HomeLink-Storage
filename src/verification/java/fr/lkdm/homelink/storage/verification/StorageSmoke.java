@@ -162,6 +162,29 @@ public final class StorageSmoke {
                 case 23 -> {
                     if (!serverDone) return;
                     RecipeViewerChecks.run((StorageScreen) client.screen);
+                    visibleTicks = 0;
+                    phase = 110;
+                }
+                case 110 -> {
+                    StorageMenu menu = (StorageMenu) client.player.containerMenu;
+                    if (!TerminalChecks.pendingReady(menu)) return;
+                    // The server ignores a command sent less than 4 ticks after the previous one.
+                    if (++visibleTicks < 10) return;
+                    StorageScreen screen = (StorageScreen) client.screen;
+                    screen.setSearchForTest("");
+                    screen.setZoneForTest(StorageScreen.PENDING_ZONE);
+                    check(screen.pendingModeForTest() && screen.displayedRowCount() == 1, "Waiting filter did not list the Deposit object");
+                    check(screen.clickRow(0, 0, false, true, false) == 1, "Ctrl+click on a waiting object did not request it");
+                    phase = 111;
+                }
+                case 111 -> {
+                    if (!TerminalChecks.pendingTaken((StorageMenu) client.player.containerMenu)) return;
+                    ((StorageScreen) client.screen).setZoneForTest("");
+                    phase = 112;
+                    onServer(client, TerminalChecks::verifyPendingWithdrawal);
+                }
+                case 112 -> {
+                    if (!serverDone) return;
                     phase = 7;
                 }
                 case 7 -> {
@@ -389,6 +412,7 @@ public final class StorageSmoke {
         LinkKeyChecks.run(player);
         DoubleChestChecks.run(player);
         WithdrawalChecks.run(player);
+        OverflowChecks.run(player);
         IndexChecks.run(player);
         HomeCoreChecks.run(player);
         RobustnessChecks.run(player);

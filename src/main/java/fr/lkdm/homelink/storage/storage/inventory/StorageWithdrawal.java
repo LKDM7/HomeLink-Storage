@@ -52,6 +52,37 @@ public final class StorageWithdrawal {
         return transferred;
     }
 
+    /**
+     * Takes objects still waiting in the Deposits bound to this Controller: the real Deposit
+     * slots supply them, bounded by the amount, the stock and the player's free space.
+     */
+    public static int withdrawPending(ServerPlayer player, StorageBlockEntity controller, ItemStack prototype, int amount) {
+        if (amount < 1 || amount > MAX_REQUEST || prototype.isEmpty() || !authorized(player, controller)) return 0;
+        var destination = new PlayerMainInvWrapper(player.getInventory());
+        int transferred = 0;
+        try {
+            for (var deposit : controller.pendingDeposits()) {
+                var inventory = deposit.inventory();
+                for (int slot = 0; slot < inventory.getSlots() && transferred < amount; slot++) {
+                    if (!ItemStack.isSameItemSameComponents(prototype, inventory.getStackInSlot(slot))) continue;
+                    ItemStack simulated = inventory.extractItem(slot, Math.min(amount - transferred, prototype.getMaxStackSize()), true);
+                    if (simulated.isEmpty()) continue;
+                    int accepted = simulated.getCount() - ItemHandlerHelper.insertItemStacked(destination, simulated, true).getCount();
+                    if (accepted <= 0) return transferred;
+                    ItemStack extracted = inventory.extractItem(slot, accepted, false);
+                    ItemStack remainder = ItemHandlerHelper.insertItemStacked(destination, extracted, false);
+                    if (!remainder.isEmpty()) player.drop(remainder, false);
+                    transferred += extracted.getCount();
+                }
+                if (transferred >= amount) break;
+            }
+        } finally {
+            player.getInventory().setChanged();
+            player.inventoryMenu.broadcastChanges();
+        }
+        return transferred;
+    }
+
     private static boolean authorized(ServerPlayer player, StorageBlockEntity controller) {
         return controller.getLevel() == player.serverLevel() && controller.canAccess(player) && controller.permission(player, Permission.CONTROL);
     }

@@ -186,3 +186,13 @@ masque la zone immédiatement.
 
 L’affichage est local : les autres joueurs ne le voient pas. Seules les positions des
 nœuds et de leurs chunks sont transmises, jamais le contenu des inventaires.
+
+## Objets sans destination : débordement et attente
+
+Un objet déposé dans un Deposit va dans un coffre qui contient déjà la même variante.
+S'il n'y en a aucun, il part après 5 s dans un **Coffre de débordement** du réseau
+(recette dans [RECIPES.md](RECIPES.md)). Sans débordement, ou s'il est plein, l'objet
+attend dans le Deposit : le Terminal affiche « ⚠ N en attente », et l'entrée **En attente
+(Deposit)** du bouton de zones liste ces objets. On les reprend avec les mêmes gestes que
+les autres objets. Le coffre de débordement n'a pas d'écran : son contenu se retire
+depuis le Terminal, et un clic droit indique son remplissage.

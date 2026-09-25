@@ -62,10 +62,39 @@ public final class TerminalChecks {
         controller.setZone(chestConnection.linkId, minerals);
         controller.setInventoryName(barrelConnection.linkId, "Iron Barrel");
         check(controller.index().totalItems() == 177, "Terminal fixture index mismatch");
+        prepareDeposit(player, controller);
         StorageBlockEntity restored = new StorageBlockEntity(CONTROLLER, controller.getBlockState());
         restored.loadWithComponents(controller.saveWithFullMetadata(level.registryAccess()), level.registryAccess());
         check("Smoke minerals".equals(restored.zones().get(minerals)), "Custom zone did not survive NBT reload");
         check(restored.connections().values().stream().anyMatch(connection -> connection.name.equals("Rare Minerals") && connection.zone.equals(minerals)), "Inventory name/zone did not survive NBT reload");
+    }
+
+    private static final BlockPos DEPOSIT = new BlockPos(5, 5, 2);
+
+    /** A Deposit bound to the fixture holds blaze rods that no inventory accepts: they wait there. */
+    private static void prepareDeposit(ServerPlayer player, StorageBlockEntity controller) {
+        var level = player.serverLevel();
+        level.setBlockAndUpdate(DEPOSIT, StorageRegistries.DEPOSIT.get().defaultBlockState());
+        var deposit = (fr.lkdm.homelink.storage.blockentity.DepositBlockEntity) level.getBlockEntity(DEPOSIT);
+        deposit.setOwner(player.getUUID());
+        check(deposit.bind(controller), "Terminal fixture Deposit binding failed");
+        deposit.inventory().setStackInSlot(0, new ItemStack(Items.BLAZE_ROD, 6));
+        controller.reportDeposit(DEPOSIT);
+    }
+
+    public static boolean pendingReady(StorageMenu menu) {
+        return menu.clientPending().size() == 1 && menu.clientPending().get(0).stack().is(Items.BLAZE_ROD) && menu.clientPending().get(0).count() == 6;
+    }
+
+    public static boolean pendingTaken(StorageMenu menu) {
+        return menu.clientPending().size() == 1 && menu.clientPending().get(0).count() == 5;
+    }
+
+    public static void verifyPendingWithdrawal(ServerPlayer player) {
+        var deposit = (fr.lkdm.homelink.storage.blockentity.DepositBlockEntity) player.serverLevel().getBlockEntity(DEPOSIT);
+        check(player.getInventory().countItem(Items.BLAZE_ROD) == 1 && deposit.inventory().getStackInSlot(0).getCount() == 5,
+                "Terminal withdrawal of a waiting object did not conserve it");
+        LogUtils.getLogger().info("STORAGE_PENDING_CLIENT_CHECKS_OK badge_list=true waiting_filter=true real_packet=true deposit=5 player=1");
     }
 
     public static boolean snapshotReady(StorageMenu menu) {

@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    " B ",
+    "CMC",
+    "III"
+  ],
+  "key": {
+    "B": {
+      "item": "homecore:homelink_circuit_board"
+    },
+    "C": {
+      "item": "minecraft:chest"
+    },
+    "M": {
+      "item": "homecore:homelink_microprocessor"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "id": "homelink_storage:storage_overflow",
+    "count": 1
+  }
+}

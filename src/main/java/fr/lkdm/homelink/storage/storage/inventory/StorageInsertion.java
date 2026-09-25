@@ -9,26 +9,37 @@ import net.neoforged.neoforge.items.IItemHandler;
 
 /** Server-thread insertion. Each successful destination slot is debited immediately, never from a simulation. */
 public final class StorageInsertion {
+    /** Ordinary pass: only inventories already holding this variant. */
     public static int deposit(StorageBlockEntity controller, DepositBlockEntity source, int sourceSlot) {
+        return deposit(controller, source, sourceSlot, false);
+    }
+
+    /**
+     * @param overflow false: only inventories already holding this variant; true: only the
+     *                 overflow chests of the network, which accept any object
+     */
+    public static int deposit(StorageBlockEntity controller, DepositBlockEntity source, int sourceSlot, boolean overflow) {
         if (!(controller.getLevel() instanceof ServerLevel level) || !level.getServer().isSameThread()
                 || source.getLevel() != level || source.isRemoved() || source.controller() != controller
                 || !controller.automationAvailable() || sourceSlot < 0 || sourceSlot >= source.inventory().getSlots()) return 0;
         if (!source.beginTransfer()) return 0;
-        try { return transfer(controller, source, sourceSlot, level); }
+        try { return transfer(controller, source, sourceSlot, level, overflow); }
         finally { source.endTransfer(); }
     }
 
-    private static int transfer(StorageBlockEntity controller, DepositBlockEntity source, int sourceSlot, ServerLevel level) {
+    private static int transfer(StorageBlockEntity controller, DepositBlockEntity source, int sourceSlot, ServerLevel level, boolean overflow) {
         ItemStack requested = source.inventory().getStackInSlot(sourceSlot).copy();
         if (requested.isEmpty()) return 0;
         int moved = 0;
-        for (var connection : controller.depositDestinations(requested)) {
+        // An overflow chest accepts any object: it does not need to hold the variant already.
+        boolean requireVariant = !overflow;
+        for (var connection : overflow ? controller.overflowDestinations() : controller.depositDestinations(requested)) {
             if (!controller.depositConnectionAvailable(connection)) continue;
             try {
                 var resolution = StorageInventoryAdapter.resolveAny(level, connection.accessPos);
                 var adapter = resolution.adapter();
                 if (adapter == null || !adapter.identity().equals(connection.inventoryPos)
-                        || !contains(adapter.handler(), requested)) continue;
+                        || requireVariant && !contains(adapter.handler(), requested)) continue;
                 // The original capability preserves sided insertion restrictions; the combined read view may not.
                 IItemHandler handler = adapter.extractionHandler();
                 var destination = level.getBlockEntity(connection.accessPos);
@@ -43,7 +54,7 @@ public final class StorageInsertion {
                     var live = StorageInventoryAdapter.resolveAny(level, connection.accessPos).adapter();
                     if (live == null || !live.identity().equals(connection.inventoryPos)
                             || level.getBlockEntity(connection.accessPos) != destination
-                            || !contains(live.handler(), requested) || source.isRemoved()
+                            || requireVariant && !contains(live.handler(), requested) || source.isRemoved()
                             || source.controller() != controller || !controller.automationAvailable()) break;
                     var liveHandler = live.extractionHandler();
                     if (slot >= liveHandler.getSlots()) break;

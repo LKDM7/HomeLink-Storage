@@ -28,6 +28,10 @@ public final class StorageRegistries {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<fr.lkdm.homelink.storage.blockentity.DepositBlockEntity>> DEPOSIT_ENTITY = ENTITIES.register("storage_deposit", () ->
             BlockEntityType.Builder.of(fr.lkdm.homelink.storage.blockentity.DepositBlockEntity::new, DEPOSIT.get()).build(null));
     public static final DeferredHolder<MenuType<?>, MenuType<fr.lkdm.homelink.storage.menu.DepositMenu>> DEPOSIT_MENU = MENUS.register("storage_deposit", () -> IMenuTypeExtension.create(fr.lkdm.homelink.storage.menu.DepositMenu::new));
+    public static final DeferredBlock<fr.lkdm.homelink.storage.block.OverflowBlock> OVERFLOW = BLOCKS.register("storage_overflow", () ->
+            new fr.lkdm.homelink.storage.block.OverflowBlock(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).strength(3.0F, 6.0F).requiresCorrectToolForDrops()));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<fr.lkdm.homelink.storage.blockentity.OverflowBlockEntity>> OVERFLOW_ENTITY = ENTITIES.register("storage_overflow", () ->
+            BlockEntityType.Builder.of(fr.lkdm.homelink.storage.blockentity.OverflowBlockEntity::new, OVERFLOW.get()).build(null));
     public static final DeferredBlock<StorageBlock> CONTROLLER = block("storage_controller");
     public static final DeferredBlock<StorageBlock> TERMINAL = block("storage_terminal");
     public static final DeferredBlock<StorageBlock> LINK = block("storage_link");
@@ -40,6 +44,7 @@ public final class StorageRegistries {
 
     static {
         ITEMS.registerSimpleBlockItem(DEPOSIT);
+        ITEMS.registerSimpleBlockItem(OVERFLOW);
         ITEMS.registerSimpleBlockItem(CONTROLLER);
         ITEMS.registerSimpleBlockItem(TERMINAL);
         ITEMS.registerSimpleBlockItem(LINK);
@@ -47,7 +52,7 @@ public final class StorageRegistries {
         TABS.register("storage", () -> CreativeModeTab.builder()
                 .title(Component.translatable("itemGroup.homelink_storage"))
                 .icon(() -> CONTROLLER.get().asItem().getDefaultInstance())
-                .displayItems((params, output) -> { output.accept(CONTROLLER); output.accept(TERMINAL); output.accept(LINK); output.accept(REPEATER); output.accept(LINK_KEY); output.accept(DEPOSIT); }).build());
+                .displayItems((params, output) -> { output.accept(CONTROLLER); output.accept(TERMINAL); output.accept(LINK); output.accept(REPEATER); output.accept(LINK_KEY); output.accept(DEPOSIT); output.accept(OVERFLOW); }).build());
     }
 
     private static DeferredBlock<StorageBlock> block(String name) {

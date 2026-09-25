@@ -81,6 +81,19 @@ R H R
 - H : entonnoir / hopper × 1
 - B : carte électronique HomeLink / HomeLink circuit board × 1
 
+## Coffre de débordement / Storage Overflow Chest — 1
+
+```text
+  B
+C M C
+I I I
+```
+
+- B : carte électronique HomeLink / HomeLink circuit board × 1
+- C : coffre / chest × 2 (54 emplacements, comme un double coffre)
+- M : microprocesseur HomeLink / HomeLink microprocessor × 1
+- I : lingot de fer / iron ingot × 3
+
 ## Clé USB de liaison / USB Linking Key — 1
 
 ```text
@@ -92,7 +105,7 @@ R C R
 - R : poudre de redstone / redstone dust × 2
 - C : lingot de cuivre / copper ingot × 1
 
-Une pioche de n’importe quel niveau récupère les cinq blocs. Chacun possède un modèle
+Une pioche de n’importe quel niveau récupère les six blocs. Chacun possède un modèle
 3D distinct. Les géométries et matériaux vanilla utilisés sont documentés dans
 `assets/homelink_storage/MATERIALS.md`.
 

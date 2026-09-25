@@ -467,10 +467,58 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
         var entry = index.find(stack);
         if (!isController() || entry == null) return List.of();
         recomputeCoverage();
+        // Ordinary inventories first: an overflow chest only takes what nothing else accepts.
         return connections.values().stream()
                 .filter(connection -> connection.status == StorageInventoryAdapter.Status.ONLINE
                         && isCoverageActive(connection.sourceId) && entry.locations().containsKey(connection.inventoryPos))
+                .sorted(Comparator.comparing((InventoryConnection connection) -> isOverflow(connection))
+                        .thenComparing(connection -> connection.inventoryPos)).toList();
+    }
+
+    /** Online overflow chests of this network, in a stable order, for objects with no other destination. */
+    public List<InventoryConnection> overflowDestinations() {
+        if (!isController()) return List.of();
+        recomputeCoverage();
+        return connections.values().stream()
+                .filter(connection -> connection.status == StorageInventoryAdapter.Status.ONLINE
+                        && isCoverageActive(connection.sourceId) && isOverflow(connection))
                 .sorted(Comparator.comparing(connection -> connection.inventoryPos)).toList();
+    }
+
+    private boolean isOverflow(InventoryConnection connection) {
+        return connection.inventoryPos != null && level != null && level.isLoaded(connection.inventoryPos)
+                && level.getBlockState(connection.inventoryPos).is(StorageRegistries.OVERFLOW.get());
+    }
+
+    /** Deposits bound to this Controller report themselves while loaded; not persisted. */
+    private final Set<BlockPos> deposits = new HashSet<>();
+    private long pendingRevision;
+
+    public void reportDeposit(BlockPos pos) {
+        if (deposits.add(pos.immutable())) pendingRevision++;
+    }
+
+    /** A Deposit's contents changed: Terminals resend their list of pending objects. */
+    public void pendingChanged() { pendingRevision++; }
+    public long pendingRevision() { return pendingRevision; }
+
+    /** Loaded Deposits currently bound to this Controller; unloaded, broken or rebound ones are dropped. */
+    public List<DepositBlockEntity> pendingDeposits() {
+        if (level == null) return List.of();
+        List<DepositBlockEntity> result = new ArrayList<>();
+        var iterator = deposits.iterator();
+        while (iterator.hasNext()) {
+            BlockPos pos = iterator.next();
+            if (!level.isLoaded(pos)
+                    || !(level.getBlockEntity(pos) instanceof DepositBlockEntity deposit) || deposit.isRemoved() || deposit.controller() != this) {
+                iterator.remove();
+                pendingRevision++;
+                continue;
+            }
+            result.add(deposit);
+        }
+        result.sort(Comparator.comparing(BlockEntity::getBlockPos));
+        return result;
     }
 
     public boolean automationAvailable() {

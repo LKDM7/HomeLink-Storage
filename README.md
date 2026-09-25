@@ -10,7 +10,9 @@ inventaires Minecraft. Chaque bloc a un rôle distinct :
   inventaires hors ligne, actualisation), sans liste d’objets ni retrait ;
 - **Link** (Connecteur) et **Repeater** : pas d’écran, un clic droit affiche leur état
   et dessine pendant 30 s leur zone d’action (leur chunk) et celles du reste du réseau ;
-- **Deposit** : écran limité à ses 27 emplacements d’entrée.
+- **Deposit** : écran limité à ses 27 emplacements d’entrée ;
+- **Coffre de débordement** : reçoit après 5 s les objets qu’aucun coffre ne contient
+  encore ; ce qui ne peut aller nulle part reste « en attente » et se reprend depuis le Terminal.
 
 ## Installation et prise en main
 

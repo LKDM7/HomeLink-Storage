@@ -1,0 +1,24 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "homelink_storage:block/storage_overflow",
+      "y": 0,
+      "uvlock": true
+    },
+    "facing=east": {
+      "model": "homelink_storage:block/storage_overflow",
+      "y": 90,
+      "uvlock": true
+    },
+    "facing=south": {
+      "model": "homelink_storage:block/storage_overflow",
+      "y": 180,
+      "uvlock": true
+    },
+    "facing=west": {
+      "model": "homelink_storage:block/storage_overflow",
+      "y": 270,
+      "uvlock": true
+    }
+  }
+}

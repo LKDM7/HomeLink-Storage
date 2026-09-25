@@ -19,10 +19,21 @@ public final class DepositBlockEntity extends StorageBlockEntity {
     private int ticks;
     private int nextSlot;
     private boolean transferring;
+    /** Deposit ticks since load; with {@link #blockedSince}, measures how long a slot found no destination. */
+    private long age;
+    private final long[] blockedSince = new long[27];
+    /** Waiting time before an object with no destination goes to an overflow chest (5 s). */
+    public static final int OVERFLOW_DELAY_TICKS = 100;
     private final ItemStackHandler inventory = new ItemStackHandler(27) {
         @Override protected void onContentsChanged(int slot) {
             setChanged();
-            if (level != null && !level.isClientSide) level.updateNeighbourForOutputSignal(worldPosition, getBlockState().getBlock());
+            blockedSince[slot] = 0;
+            if (level != null && !level.isClientSide) {
+                level.updateNeighbourForOutputSignal(worldPosition, getBlockState().getBlock());
+                // Terminals list the objects waiting here.
+                var controller = controller();
+                if (controller != null) controller.pendingChanged();
+            }
         }
     };
 
@@ -40,17 +51,27 @@ public final class DepositBlockEntity extends StorageBlockEntity {
     public void endTransfer() { transferring = false; }
 
     public static void tick(Level level, BlockPos pos, BlockState state, DepositBlockEntity deposit) {
-        if (level.isClientSide || ++deposit.ticks < 20) return;
+        if (level.isClientSide) return;
+        deposit.age++;
+        if (++deposit.ticks < 20) return;
         deposit.ticks = 0;
         if (deposit.controllerPos() == null) { deposit.status = Status.NOT_CONNECTED; return; }
         var controller = deposit.controller();
+        // Waiting objects stay visible from Terminals even while sorting is suspended.
+        if (controller != null) controller.reportDeposit(pos);
         if (controller == null || !controller.automationAvailable()) { deposit.status = Status.CONTROLLER_OFFLINE; return; }
         for (int offset = 0; offset < 27; offset++) {
             int slot = (deposit.nextSlot + offset) % 27;
             if (deposit.inventory.getStackInSlot(slot).isEmpty()) continue;
             deposit.nextSlot = (slot + 1) % 27;
             deposit.setChanged();
-            int accepted = fr.lkdm.homelink.storage.storage.inventory.StorageInsertion.deposit(controller, deposit, slot);
+            int accepted = fr.lkdm.homelink.storage.storage.inventory.StorageInsertion.deposit(controller, deposit, slot, false);
+            if (accepted == 0) {
+                // No inventory holds this object yet: after the delay, the overflow chest takes it.
+                if (deposit.blockedSince[slot] == 0) deposit.blockedSince[slot] = deposit.age;
+                else if (deposit.age - deposit.blockedSince[slot] >= OVERFLOW_DELAY_TICKS)
+                    accepted = fr.lkdm.homelink.storage.storage.inventory.StorageInsertion.deposit(controller, deposit, slot, true);
+            }
             deposit.status = accepted > 0 ? Status.SORTING : Status.BLOCKED;
             if (accepted > 0) level.playSound(null, pos, net.minecraft.sounds.SoundEvents.ITEM_PICKUP,
                     net.minecraft.sounds.SoundSource.BLOCKS, 0.12F, 0.8F);

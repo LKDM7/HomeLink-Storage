@@ -161,7 +161,7 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
             zoneButton.setTooltip(Tooltip.create(zoneButton.getMessage()));
             button("close", 10, 194, 80, this::onClose);
             button("locate", 94, 194, 124, () -> {
-                if (selectedLocation != null) menu.send("locate", selectedLocation.linkId().toString(), "");
+                if (selectedLocation != null && !pendingMode()) menu.send("locate", selectedLocation.linkId().toString(), "");
             });
             String draftQuantity = quantity == null ? "64" : quantity.getValue();
             quantity = input(new EditBox(font, leftPos + 222, topPos + 194, 54, 18, text("quantity")));
@@ -180,6 +180,10 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
      */
     public void withdraw(int amount) {
         if (selected == null || amount < 1) return;
+        if (pendingMode()) {
+            menu.send("withdraw_pending", "", selected.id() + ":" + Math.min(amount, StorageWithdrawal.MAX_REQUEST));
+            return;
+        }
         if (selected.id() < 0) {
             variants = true; dirty = true; rebuildWidgets(); refreshRows();
             if (minecraft.player != null) minecraft.player.displayClientMessage(text("choose_variant"), true);
@@ -226,13 +230,22 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
         return new Hovered(rows.get(index).stack(), leftPos + 12, topPos + 85 + line * 17, 16, 16);
     }
 
+    /** Filter entry listing objects still waiting in the Deposits instead of the network. */
+    public static final String PENDING_ZONE = "\u0001pending";
+
+    private boolean pendingMode() { return PENDING_ZONE.equals(zone); }
+
+    private long pendingTotal() { return menu.clientPending().stream().mapToLong(StorageData.Pending::count).sum(); }
+
     private String cycleZone(String current, boolean includeAll) {
         List<String> ids = new ArrayList<>(menu.clientZones().keySet());
         if (includeAll) ids.add(0, "");
+        if (includeAll && (!menu.clientPending().isEmpty() || PENDING_ZONE.equals(current))) ids.add(PENDING_ZONE);
         return ids.isEmpty() ? "" : ids.get((ids.indexOf(current) + 1) % ids.size());
     }
 
     private String zoneLabel(String id) {
+        if (PENDING_ZONE.equals(id)) return text("pending_zone", pendingTotal()).getString();
         String value = menu.clientZones().getOrDefault(id, id);
         if (value.isBlank()) return Component.translatable("zone.homelink_storage." + id).getString();
         return value.startsWith("zone.homelink_storage.") ? Component.translatable(value).getString() : value;
@@ -254,6 +267,8 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
         refreshRows();
     }
 
+    public boolean pendingModeForTest() { return pendingMode(); }
+
     public void setZoneForTest(String id) {
         zone = id;
         dirty = true;
@@ -274,6 +289,8 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
         if (!dirty) return;
         dirty = false;
         rows.clear();
+        if (pendingMode() && menu.clientPending().isEmpty()) zone = "";
+        if (pendingMode()) { refreshPendingRows(); return; }
         Map<BlockPos, StorageData.Location> byPosition = new HashMap<>();
         for (StorageData.Location location : menu.clientLocations()) byPosition.putIfAbsent(location.position(), location);
         String query = search == null ? "" : search.getValue().trim().toLowerCase(Locale.ROOT);
@@ -283,10 +300,7 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
         for (StorageData.Row row : menu.clientRows()) {
             ItemStack stack = row.stack();
             String registry = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-            boolean match = query.isEmpty() || (query.startsWith("#")
-                    ? stack.getTags().anyMatch(tag -> tag.location().toString().contains(query.substring(1)))
-                    : registry.contains(query) || stack.getHoverName().getString().toLowerCase(Locale.ROOT).contains(query));
-            if (!match) continue;
+            if (!matches(stack, query)) continue;
             Map<BlockPos, Long> filteredLocations = new LinkedHashMap<>();
             row.locations().forEach((pos, count) -> {
                 StorageData.Location location = byPosition.get(pos);
@@ -320,8 +334,39 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
         refreshLocations();
     }
 
+    private static boolean matches(ItemStack stack, String query) {
+        String registry = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+        return query.isEmpty() || (query.startsWith("#")
+                ? stack.getTags().anyMatch(tag -> tag.location().toString().contains(query.substring(1)))
+                : registry.contains(query) || stack.getHoverName().getString().toLowerCase(Locale.ROOT).contains(query));
+    }
+
+    /** Exact variants waiting in the Deposits; their "locations" are the Deposits holding them. */
+    private void refreshPendingRows() {
+        String query = search == null ? "" : search.getValue().trim().toLowerCase(Locale.ROOT);
+        for (StorageData.Pending waiting : menu.clientPending())
+            if (matches(waiting.stack(), query)) rows.add(new View(waiting.index(), waiting.stack(), waiting.count(), new LinkedHashMap<>(waiting.deposits())));
+        Comparator<View> order = Comparator.comparing(view -> view.stack().getHoverName().getString(), String.CASE_INSENSITIVE_ORDER);
+        if (byCount) order = Comparator.comparingLong(View::count).reversed().thenComparing(order);
+        rows.sort(order);
+        scroll = Math.min(scroll, Math.max(0, rows.size() - 6));
+        if (selected != null) {
+            ItemStack previous = selected.stack();
+            selected = rows.stream().filter(view -> ItemStack.isSameItemSameComponents(view.stack(), previous)).findFirst().orElse(null);
+        }
+        if (selected == null && !rows.isEmpty()) selected = rows.get(0);
+        refreshLocations();
+    }
+
     private void refreshLocations() {
         locations.clear();
+        if (pendingMode()) {
+            if (selected != null) selected.locations().keySet().forEach(pos -> locations.add(new StorageData.Location(
+                    new java.util.UUID(0, pos.asLong()), pos, text("deposit_label").getString(), PENDING_ZONE, "PENDING")));
+            selectedLocation = locations.isEmpty() ? null : locations.get(0);
+            locationScroll = 0;
+            return;
+        }
         java.util.Set<BlockPos> seenPositions = new java.util.HashSet<>();
         for (StorageData.Location location : menu.clientLocations()) {
             if (management || (selected != null && selected.locations().containsKey(location.position())
@@ -382,7 +427,11 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
         }
         Component summary = stats.connected() ? text("stats", stats.items(), stats.unique(), stats.inventories(),
                 stats.slots() == 0 ? 0 : (int) (100L * stats.occupied() / stats.slots())) : text("disconnected");
-        graphics.drawString(font, font.plainSubstrByWidth(summary.getString(), imageWidth - 20), 10, 32, StorageTheme.MUTED, false);
+        long waiting = management ? 0 : pendingTotal();
+        String badge = waiting > 0 ? text("pending_badge", waiting).getString() : "";
+        int badgeWidth = badge.isEmpty() ? 0 : font.width(badge) + 8;
+        graphics.drawString(font, font.plainSubstrByWidth(summary.getString(), imageWidth - 20 - badgeWidth), 10, 32, StorageTheme.MUTED, false);
+        if (!badge.isEmpty()) graphics.drawString(font, badge, imageWidth - 10 - font.width(badge), 32, StorageTheme.WARNING, false);
         if (management) {
             graphics.drawString(font, text("inventories"), 12, 70, StorageTheme.MUTED, false);
             if (selectedLocation != null) graphics.drawString(font, statusLabel(selectedLocation), 198, 62, StorageTheme.status(selectedLocation.status()), false);

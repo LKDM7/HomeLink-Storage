@@ -40,6 +40,7 @@ public final class StorageMenu extends AbstractContainerMenu {
     private final Map<Long, StorageData.Row> rows = new LinkedHashMap<>();
     private final Map<UUID, StorageData.Location> locations = new LinkedHashMap<>();
     private final Map<String, String> zones = new LinkedHashMap<>();
+    private List<StorageData.Pending> pending = List.of();
     private StorageData.Stats stats = new StorageData.Stats(0,0,0,0,0,0,false);
     private long clientRevision;
     private String clientName = "";
@@ -64,6 +65,8 @@ public final class StorageMenu extends AbstractContainerMenu {
     public Collection<StorageData.Row> clientRows() { return Collections.unmodifiableCollection(rows.values()); }
     public Collection<StorageData.Location> clientLocations() { return Collections.unmodifiableCollection(locations.values()); }
     public Map<String, String> clientZones() { return Collections.unmodifiableMap(zones); }
+    /** Objects waiting in the Deposits of the network (Terminal only). */
+    public List<StorageData.Pending> clientPending() { return pending; }
     public StorageData.Stats clientStats() { return stats; }
     public long clientRevision() { return clientRevision; }
     public void send(String action, String target, String value) { PacketDistributor.sendToServer(new StoragePackets.Command(containerId, action, target, value)); }
@@ -77,7 +80,7 @@ public final class StorageMenu extends AbstractContainerMenu {
         StorageBlockEntity controller = controller();
         if (controller != null && !controller.canAccess(viewer)) { viewer.closeContainer(); return; }
         UUID identity = controller == null ? null : controller.id();
-        if (!Objects.equals(sentController, identity)) { first = true; clearPending(); sent.clear(); sentIndex = -1; sentMetadata = -1; sentLocations = 0; sentController = identity; }
+        if (!Objects.equals(sentController, identity)) { first = true; clearPending(); sent.clear(); sentIndex = -1; sentMetadata = -1; sentLocations = 0; sentPendingRevision = -1; sentController = identity; }
         // Two revision comparisons when nothing changed, so checking often costs nothing.
         if (!hasPending()) prepare(controller);
         for (int fragments = 0; hasPending() && fragments < (urgent ? URGENT_FRAGMENTS : 1); fragments++)
@@ -88,7 +91,9 @@ public final class StorageMenu extends AbstractContainerMenu {
     private void prepare(StorageBlockEntity controller) {
         long revision = controller == null ? 0 : controller.index().revision();
         long metadata = controller == null ? 0 : controller.metadataRevision();
-        if (!first && sentIndex == revision && sentMetadata == metadata) return;
+        long pending = controller == null ? 0 : controller.pendingRevision();
+        if (!first && sentIndex == revision && sentMetadata == metadata && sentPendingRevision == pending) return;
+        boolean reset = first;
         CompoundTag packet = new CompoundTag(); packet.putBoolean("Reset", first); first = false;
         packet.putBoolean("Connected", controller != null);
         CompoundTag zoneTag = new CompoundTag();
@@ -106,7 +111,7 @@ public final class StorageMenu extends AbstractContainerMenu {
                         connection.name, connection.zone, connection.status.name()));
             }
             int locationsHash = current.hashCode();
-            if (first || locationsHash != sentLocations) {
+            if (reset || locationsHash != sentLocations) {
                 pendingLocations.addAll(current);
                 packet.putBoolean("LocationsReset", true);
                 sentLocations = locationsHash;
@@ -119,9 +124,73 @@ public final class StorageMenu extends AbstractContainerMenu {
             }
             sent.keySet().stream().filter(id -> !alive.contains(id)).forEach(pendingRemoved::add);
             sent.keySet().retainAll(alive);
-        } else { sent.clear(); sentLocations = 0; packet.putBoolean("Reset", true); }
+            // Objects waiting in the Deposits, for the Terminal only.
+            if (!managesNetwork() && (reset || sentPendingRevision != pending)) {
+                pendingSnapshot = pendingEntries(controller);
+                ListTag waiting = new ListTag();
+                int budget = (StorageConfig.MAX_PACKET_BYTES.get() - 1024) / 2, size = 0;
+                for (int i = 0; i < pendingSnapshot.size() && waiting.size() < MAX_PENDING; i++) {
+                    var entry = pendingSnapshot.get(i);
+                    CompoundTag tag = new CompoundTag();
+                    tag.putInt("Index", i); tag.putLong("Count", entry.total());
+                    tag.put("Stack", displayStack(entry.prototype(), i));
+                    ListTag at = new ListTag();
+                    entry.deposits().forEach((position, count) -> { CompoundTag loc = new CompoundTag(); loc.putLong("Pos", position.asLong()); loc.putLong("Count", count); at.add(loc); });
+                    tag.put("Deposits", at);
+                    int bytes = encodedBytes(tag);
+                    if (size + bytes >= budget) break;
+                    waiting.add(tag); size += bytes;
+                }
+                packet.put("Pending", waiting);
+                packet.putBoolean("PendingSet", true);
+            }
+        } else { sent.clear(); sentLocations = 0; pendingSnapshot = List.of(); packet.putBoolean("Reset", true); }
         packet.putBoolean("Header", true); packet.put("Zones", zoneTag);
-        pendingHeader = packet; sentIndex = revision; sentMetadata = metadata;
+        pendingHeader = packet; sentIndex = revision; sentMetadata = metadata; sentPendingRevision = pending;
+    }
+
+    /** One waiting variant, aggregated over every Deposit of the network. */
+    public record PendingEntry(ItemStack prototype, long total, Map<BlockPos, Long> deposits) {}
+    private static final int MAX_PENDING = 64;
+    private List<PendingEntry> pendingSnapshot = List.of();
+    private long sentPendingRevision = -1;
+
+    public static List<PendingEntry> pendingEntries(StorageBlockEntity controller) {
+        List<ItemStack> prototypes = new ArrayList<>();
+        List<Long> totals = new ArrayList<>();
+        List<Map<BlockPos, Long>> where = new ArrayList<>();
+        for (var deposit : controller.pendingDeposits()) {
+            var inventory = deposit.inventory();
+            for (int slot = 0; slot < inventory.getSlots(); slot++) {
+                ItemStack stack = inventory.getStackInSlot(slot);
+                if (stack.isEmpty()) continue;
+                int found = -1;
+                for (int i = 0; i < prototypes.size() && found < 0; i++) if (ItemStack.isSameItemSameComponents(prototypes.get(i), stack)) found = i;
+                if (found < 0) { prototypes.add(stack.copyWithCount(1)); totals.add(0L); where.add(new LinkedHashMap<>()); found = prototypes.size() - 1; }
+                totals.set(found, totals.get(found) + stack.getCount());
+                where.get(found).merge(deposit.getBlockPos(), (long) stack.getCount(), Long::sum);
+            }
+        }
+        List<PendingEntry> entries = new ArrayList<>(prototypes.size());
+        for (int i = 0; i < prototypes.size(); i++) entries.add(new PendingEntry(prototypes.get(i), totals.get(i), Map.copyOf(where.get(i))));
+        return entries;
+    }
+
+    /** Wire form of a displayed stack; oversized components are replaced by a neutral labelled stack. */
+    private CompoundTag displayStack(ItemStack display, long id) {
+        int limit = StorageConfig.MAX_PACKET_BYTES.get() - 1024;
+        var stack = display.save(viewer.registryAccess());
+        if (stack.sizeInBytes() > Math.min(StorageConfig.MAX_COMPONENT_BYTES.get(), limit / 4)) {
+            ItemStack neutral = new ItemStack(display.getItem());
+            neutral.set(DataComponents.CUSTOM_NAME, Component.translatable("screen.homelink_storage.complex_variant", id));
+            stack = neutral.save(viewer.registryAccess());
+            if (stack.sizeInBytes() > Math.min(StorageConfig.MAX_COMPONENT_BYTES.get(), limit / 4)) {
+                neutral = new ItemStack(net.minecraft.world.item.Items.PAPER);
+                neutral.set(DataComponents.CUSTOM_NAME, Component.translatable("screen.homelink_storage.complex_variant", id));
+                stack = neutral.save(viewer.registryAccess());
+            }
+        }
+        return (CompoundTag) stack;
     }
 
     /** Exact encoded NBT size; only the next fragment is materialized. */
@@ -163,18 +232,7 @@ public final class StorageMenu extends AbstractContainerMenu {
         while (!pendingRows.isEmpty() && batch.size() < rowLimit) {
             var entry = pendingRows.peekFirst();
             CompoundTag row = new CompoundTag(); row.putLong("Id", entry.id()); row.putLong("Count", entry.total());
-            var stack = entry.display().save(viewer.registryAccess());
-            if (stack.sizeInBytes() > Math.min(StorageConfig.MAX_COMPONENT_BYTES.get(), limit / 4)) {
-                ItemStack neutral = new ItemStack(entry.display().getItem());
-                neutral.set(DataComponents.CUSTOM_NAME, Component.translatable("screen.homelink_storage.complex_variant", entry.id()));
-                stack = neutral.save(viewer.registryAccess());
-                if (stack.sizeInBytes() > Math.min(StorageConfig.MAX_COMPONENT_BYTES.get(), limit / 4)) {
-                    neutral = new ItemStack(net.minecraft.world.item.Items.PAPER);
-                    neutral.set(DataComponents.CUSTOM_NAME, Component.translatable("screen.homelink_storage.complex_variant", entry.id()));
-                    stack = neutral.save(viewer.registryAccess());
-                }
-            }
-            row.put("Stack", stack);
+            row.put("Stack", displayStack(entry.display(), entry.id()));
             ListTag counts = new ListTag();
             entry.locations().forEach((position, count) -> { CompoundTag loc = new CompoundTag(); loc.putLong("Pos", position.asLong()); loc.putLong("Count", count); counts.add(loc); });
             row.put("Locations", counts);
@@ -190,7 +248,18 @@ public final class StorageMenu extends AbstractContainerMenu {
             fr.lkdm.homelink.storage.network.LocateState.accept(BlockPos.of(data.getLong("Locate")), data.getString("Dimension"), data.getInt("Duration"));
             return;
         }
-        if (data.getBoolean("Reset")) { rows.clear(); locations.clear(); zones.clear(); }
+        if (data.getBoolean("Reset")) { rows.clear(); locations.clear(); zones.clear(); pending = List.of(); }
+        if (data.getBoolean("PendingSet")) {
+            List<StorageData.Pending> received = new ArrayList<>();
+            for (var value : data.getList("Pending", 10)) {
+                CompoundTag tag = (CompoundTag) value;
+                Map<BlockPos, Long> at = new LinkedHashMap<>();
+                for (var entry : tag.getList("Deposits", 10)) { CompoundTag loc = (CompoundTag) entry; at.put(BlockPos.of(loc.getLong("Pos")), loc.getLong("Count")); }
+                ItemStack stack = ItemStack.parseOptional(registries, tag.getCompound("Stack"));
+                if (!stack.isEmpty()) received.add(new StorageData.Pending(tag.getInt("Index"), stack, tag.getLong("Count"), Map.copyOf(at)));
+            }
+            pending = List.copyOf(received);
+        }
         if (data.getBoolean("Header")) {
             clientName = data.getString("Name");
             stats = new StorageData.Stats(data.getLong("Items"), data.getInt("Unique"), data.getInt("Inventories"), data.getInt("Occupied"), data.getInt("Slots"), data.getInt("Full"), data.getBoolean("Connected"));
@@ -247,6 +316,16 @@ public final class StorageMenu extends AbstractContainerMenu {
                     long rowId = Long.parseLong(parts[0]);
                     if (!sent.containsKey(rowId)) return;
                     int count = StorageWithdrawal.withdrawAny(player, controller, preferred, rowId, Integer.parseInt(parts[1]));
+                    player.displayClientMessage(Component.translatable(count > 0
+                            ? "message.homelink_storage.withdrawn" : "message.homelink_storage.withdraw_failed", count), true);
+                }
+                case "withdraw_pending" -> {
+                    // value: "index:amount", index into the snapshot last sent to this Terminal.
+                    String[] parts = value.split(":", -1);
+                    if (parts.length != 2 || !controller.id().equals(sentController)) return;
+                    int index = Integer.parseInt(parts[0]);
+                    if (index < 0 || index >= pendingSnapshot.size()) return;
+                    int count = StorageWithdrawal.withdrawPending(player, controller, pendingSnapshot.get(index).prototype(), Integer.parseInt(parts[1]));
                     player.displayClientMessage(Component.translatable(count > 0
                             ? "message.homelink_storage.withdrawn" : "message.homelink_storage.withdraw_failed", count), true);
                 }
@@ -307,7 +386,7 @@ public final class StorageMenu extends AbstractContainerMenu {
 
     private static final Set<String> CONTROLLER_ACTIONS = Set.of("rename_controller", "rename_inventory", "set_zone",
             "create_zone", "forget_inventory", "refresh");
-    private static final Set<String> TERMINAL_ACTIONS = Set.of("locate", "withdraw", "withdraw_any", "withdraw_batch");
+    private static final Set<String> TERMINAL_ACTIONS = Set.of("locate", "withdraw", "withdraw_any", "withdraw_batch", "withdraw_pending");
 
     /** Each block only accepts its own role's commands, whatever a client sends. */
     public static boolean allowed(String action, boolean controller) {

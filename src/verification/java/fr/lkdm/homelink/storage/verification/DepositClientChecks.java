@@ -65,6 +65,7 @@ final class DepositClientChecks {
             level.setBlockAndUpdate(new BlockPos(x, 4, z), net.minecraft.world.level.block.Blocks.SMOOTH_STONE.defaultBlockState());
         level.setBlockAndUpdate(new BlockPos(10, 5, 10), StorageRegistries.DEPOSIT.get().defaultBlockState());
         level.setBlockAndUpdate(new BlockPos(12, 5, 10), StorageRegistries.TERMINAL.get().defaultBlockState());
+        level.setBlockAndUpdate(new BlockPos(14, 5, 10), StorageRegistries.OVERFLOW.get().defaultBlockState());
         player.getAbilities().flying = true;
         player.onUpdateAbilities();
         player.teleportTo(level, 12.6, 6.6, 6.6, java.util.Set.of(), 24F, 27F);

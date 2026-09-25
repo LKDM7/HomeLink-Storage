@@ -20,10 +20,33 @@ ne bloque pas les lingots placés après lui. Les coffres pleins sont ignorés d
 ordre stable de positions. Après un transfert partiel, le reste attend son prochain
 tour. Une seule destination recevant des objets est utilisée par tentative.
 
-Sans coffre contenant la même variante, l'objet reste dans le Deposit. Pour amorcer
-une nouvelle destination, placer manuellement un exemplaire dans un coffre couvert
-par un Storage Link. Le prochain rafraîchissement normal du Controller l'indexera
-(par défaut toutes les 100 ticks ; une actualisation manuelle est aussi possible).
+Sans coffre contenant la même variante, l'objet attend **5 secondes** dans le Deposit,
+puis part dans un **Coffre de débordement** du réseau (voir plus bas). Ce délai laisse
+à un coffre tout juste « amorcé » à la main le temps d'être indexé. Une fois dans le
+coffre de débordement, les exemplaires suivants y vont aussi, puisqu'il contient
+désormais cette variante. Un coffre ordinaire qui contient la même variante reste
+toujours prioritaire sur le débordement.
+
+Sans coffre de débordement, ou s'il est plein, l'objet reste dans le Deposit. Le
+Terminal le signale alors par un badge « ⚠ N en attente », et l'entrée **En attente
+(Deposit)** de son filtre de zones liste ces objets. Les raccourcis habituels (double-clic,
+Maj+clic, clic droit, Ctrl+clic, clic molette, champ Quantité) les reprennent directement
+depuis le Deposit.
+
+## Coffre de débordement
+
+Bloc de 54 emplacements, fabriqué avec une carte électronique et un microprocesseur
+HomeCore. Il se pose dans un chunk couvert par un Storage Link, comme un coffre ordinaire,
+et aucune liaison n'est nécessaire. Il n'a pas d'écran : un clic droit indique son
+remplissage, et son contenu se reprend depuis le Terminal. Les entonnoirs et le
+comparateur fonctionnent. Casser le bloc libère son contenu. Un réseau peut en avoir
+plusieurs, utilisés dans un ordre stable de positions.
+
+```text
+          Carte électronique
+Coffre    Microprocesseur    Coffre
+Fer       Fer                Fer
+```
 Les composants font partie de l'identité : noms, enchantements et variantes restent
 distincts selon les règles de l'index existant.
 

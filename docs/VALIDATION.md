@@ -236,3 +236,34 @@ pendant 2 s au plus, et le message affiché devient « Zone d'action masquée »
   la liste des inventaires (3 fragments au plus) et le client la conserve.
 - `runSmoke` en `en_us` (1 tick), `-PwithJei` et `-PwithDashboard` : succès. `runPersistence`
   en passes `write` puis `read` : 7 GameTests requis réussis à chaque passe.
+
+## Coffre de débordement et objets en attente — 26 septembre 2026
+
+Nouveau bloc `storage_overflow`, 54 emplacements, sans écran. Il est découvert par les
+Links comme un inventaire ordinaire (capacité NeoForge). Il se fabrique avec une carte
+électronique et un microprocesseur HomeCore, et utilise une palette dédiée (purpur,
+blackstone, cuivre, améthyste, bande orange). Après 5 s sans destination
+(`OVERFLOW_DELAY_TICKS`), le Deposit envoie l'objet au débordement. Les objets restés
+dans les Deposits sont synchronisés vers les Terminals (révision `pendingRevision`,
+64 variantes au plus par en-tête) et repris par l'action `withdraw_pending`, réservée
+au Terminal.
+
+- `build runSmoke -PsmokeLanguage=fr_fr` : succès, 30 marqueurs.
+  `STORAGE_OVERFLOW_CHECKS_OK` vient d'un vrai serveur :
+  - le coffre est découvert ;
+  - l'objet connu va dans son coffre ;
+  - l'objet inconnu n'est pas pris par la passe ordinaire, puis part au débordement ;
+  - les exemplaires suivants suivent ;
+  - un coffre ordinaire reste prioritaire ;
+  - de vrais ticks du Deposit montrent qu'il n'y a aucun débordement avant 5 s, puis le transfert ;
+  - un débordement plein refuse l'objet ;
+  - l'objet en attente est listé, les bornes 0 et 2 305 sont refusées, et le retrait
+    donne 2 objets réels.
+
+  `STORAGE_PENDING_CLIENT_CHECKS_OK` : dans le vrai client, le filtre « En attente »
+  liste le Deposit de la scène, et un Ctrl+clic donne 1 bâton de blaze (Deposit de 6
+  à 5). Captures inspectées : `storage-deposit-model.png` (nouveau modèle à côté du
+  Deposit et du Terminal) et `storage-terminal.png` (badge « ⚠ 5 en attente »).
+- `RecipeChecks` : 6 recettes, dont celle du coffre de débordement avec les vrais items HomeCore.
+- `runSmoke` en `en_us`, `-PwithJei` et `-PwithDashboard` : succès. `runPersistence`
+  en passes `write` puis `read` : 7 GameTests requis réussis à chaque passe.
