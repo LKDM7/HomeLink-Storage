@@ -118,7 +118,9 @@ public final class TerminalChecks {
         if (++managementTicks < 8) return false;
         switch (managementStep) {
             case 0 -> {
-                managementLink = menu.clientLocations().stream().filter(location -> location.position().equals(CHEST)).findFirst().orElseThrow().linkId().toString();
+                var chest = menu.clientLocations().stream().filter(location -> location.position().equals(CHEST)).findFirst();
+                if (chest.isEmpty()) return false;
+                managementLink = chest.orElseThrow().linkId().toString();
                 menu.send("rename_controller", "", "Verified storage");
                 managementStep = 1;
                 managementTicks = 0;

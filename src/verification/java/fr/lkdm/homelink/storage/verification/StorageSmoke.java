@@ -43,6 +43,7 @@ public final class StorageSmoke {
     private static int phase;
     private static long deadline;
     private static int visibleTicks;
+    private static long withdrawRequestedAt;
     private static volatile boolean serverDone;
     private static volatile Throwable serverFailure;
 
@@ -121,20 +122,46 @@ public final class StorageSmoke {
                     StorageMenu menu = (StorageMenu) client.player.containerMenu;
                     if (!TerminalChecks.deltaReady(menu)) return;
                     TerminalChecks.verifyDelta(menu, screen);
-                    phase = 18;
+                    check(!menu.managesNetwork(), "Terminal opened in management mode");
+                    phase = 90;
+                    onServer(client, StorageSmoke::openController);
                 }
-                case 18 -> {
-                    if (!TerminalChecks.managementComplete((StorageMenu) client.player.containerMenu)) return;
+                case 90 -> {
+                    // Zones and names are managed from the Controller's own screen.
+                    if (!serverDone || !(client.screen instanceof StorageScreen)
+                            || !(client.player.containerMenu instanceof StorageMenu menu) || !menu.managesNetwork()) return;
+                    if (!TerminalChecks.managementComplete(menu)) return;
+                    check(menu.clientRows().isEmpty() && menu.clientStats().items() > 0, "Controller screen received item rows");
+                    visibleTicks = 0;
+                    phase = 91;
+                }
+                case 91 -> {
+                    if (++visibleTicks < 20) return;
+                    net.minecraft.client.Screenshot.grab(client.gameDirectory, "storage-controller.png", client.getMainRenderTarget(), message -> LogUtils.getLogger().info("STORAGE_CONTROLLER_SCREENSHOT {}", message.getString()));
+                    LogUtils.getLogger().info("STORAGE_CONTROLLER_SCREEN_CHECKS_OK management=true item_rows=0");
+                    phase = 92;
+                    onServer(client, StorageSmoke::openTerminal);
+                }
+                case 92 -> {
+                    if (!serverDone || !(client.screen instanceof StorageScreen)
+                            || !(client.player.containerMenu instanceof StorageMenu menu) || menu.managesNetwork()
+                            || menu.clientRows().isEmpty() || menu.clientStats().items() != 161) return;
+                    if (++visibleTicks < 25) return;
                     WithdrawalChecks.request((StorageScreen) client.screen);
+                    withdrawRequestedAt = client.level.getGameTime();
                     phase = 22;
                 }
                 case 22 -> {
                     if (!WithdrawalChecks.received((StorageMenu) client.player.containerMenu)) return;
+                    long refreshTicks = client.level.getGameTime() - withdrawRequestedAt;
+                    LogUtils.getLogger().info("STORAGE_WITHDRAW_REFRESH_TICKS {}", refreshTicks);
+                    check(refreshTicks <= 4, "Terminal count refreshed too slowly after a withdrawal: " + refreshTicks + " ticks");
                     phase = 23;
                     onServer(client, WithdrawalChecks::verify);
                 }
                 case 23 -> {
                     if (!serverDone) return;
+                    RecipeViewerChecks.run((StorageScreen) client.screen);
                     phase = 7;
                 }
                 case 7 -> {
@@ -154,6 +181,51 @@ public final class StorageSmoke {
                 case 9 -> {
                     if (++visibleTicks < 10) return;
                     net.minecraft.client.Screenshot.grab(client.gameDirectory, "storage-locate.png", client.getMainRenderTarget(), message -> LogUtils.getLogger().info("STORAGE_LOCATE_SCREENSHOT {}", message.getString()));
+                    phase = 93;
+                    // A real right-click on the fixture Link sends its coverage zone to this client.
+                    onServer(client, player -> player.gameMode.useItemOn(player, player.serverLevel(), ItemStack.EMPTY, InteractionHand.MAIN_HAND,
+                            new BlockHitResult(new BlockPos(7, 5, 7).getCenter(), Direction.UP, new BlockPos(7, 5, 7), false)));
+                }
+                case 93 -> {
+                    if (!serverDone) return;
+                    var view = fr.lkdm.homelink.storage.network.CoverageState.current();
+                    if (view == null) return;
+                    check(client.player.containerMenu == client.player.inventoryMenu, "Link right-click opened a menu");
+                    var focus = view.chunks().stream().filter(fr.lkdm.homelink.storage.network.CoverageState.Chunk::focus).toList();
+                    check(focus.size() == 1 && focus.get(0).x() == 0 && focus.get(0).z() == 0 && focus.get(0).active()
+                            && focus.get(0).node().equals(new BlockPos(7, 5, 7)), "Link coverage zone not received: " + view.chunks());
+                    visibleTicks = 0;
+                    phase = 95;
+                    // Stand outside the covered chunk, facing its southern border, for a representative capture.
+                    onServer(client, player -> player.connection.teleport(8.5, 6, 23.5, 180, 25));
+                }
+                case 95 -> {
+                    if (!serverDone || client.player.getZ() < 20) return;
+                    phase = 94;
+                }
+                case 94 -> {
+                    if (++visibleTicks < 10) return;
+                    net.minecraft.client.Screenshot.grab(client.gameDirectory, "storage-coverage.png", client.getMainRenderTarget(), message -> LogUtils.getLogger().info("STORAGE_COVERAGE_SCREENSHOT {}", message.getString()));
+                    LogUtils.getLogger().info("STORAGE_COVERAGE_ZONE_CHECKS_OK real_click=true packet=true chunk=0,0 active=true menu=false");
+                    onServer(client, player -> player.connection.teleport(2.5, 6, 3.5, 90, 20));
+                    phase = 96;
+                }
+                case 96 -> {
+                    if (!serverDone || client.player.getZ() > 5) return;
+                    // A real client right-click on the same Link hides its zone at once.
+                    BlockPos link = new BlockPos(7, 5, 7);
+                    check(fr.lkdm.homelink.storage.network.CoverageState.showing(link), "Coverage zone expired before the toggle check");
+                    client.gameMode.useItemOn(client.player, InteractionHand.MAIN_HAND, new BlockHitResult(link.getCenter(), Direction.UP, link, false));
+                    check(!fr.lkdm.homelink.storage.network.CoverageState.showing(link), "Second right-click did not hide the zone immediately");
+                    visibleTicks = 0;
+                    phase = 97;
+                }
+                case 97 -> {
+                    // The server still answers the click: that answer must not show the zone again.
+                    if (++visibleTicks < 20) return;
+                    check(fr.lkdm.homelink.storage.network.CoverageState.current() == null, "Server answer showed the hidden zone again");
+                    check(client.player.containerMenu == client.player.inventoryMenu, "Link toggle opened a menu");
+                    LogUtils.getLogger().info("STORAGE_COVERAGE_TOGGLE_CHECKS_OK instant_hide=true server_answer_ignored=true");
                     phase = 10;
                 }
                 case 10 -> {
@@ -324,6 +396,13 @@ public final class StorageSmoke {
         PacketChecks.run(player);
         TerminalChecks.prepare(player, TERMINAL);
         openTerminal(player);
+    }
+
+    private static void openController(ServerPlayer player) {
+        BlockPos controller = new BlockPos(0, 5, 0);
+        player.gameMode.useItemOn(player, player.serverLevel(), ItemStack.EMPTY, InteractionHand.MAIN_HAND,
+                new BlockHitResult(controller.getCenter(), Direction.SOUTH, controller, false));
+        check(player.containerMenu instanceof StorageMenu menu && menu.managesNetwork(), "Controller interaction did not open its management menu");
     }
 
     private static void openTerminal(ServerPlayer player) {

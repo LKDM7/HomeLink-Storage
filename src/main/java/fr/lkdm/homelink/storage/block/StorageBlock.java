@@ -137,6 +137,9 @@ public class StorageBlock extends BaseEntityBlock {
         if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof StorageBlockEntity storage) {
             StorageBinding.interact(serverPlayer, storage);
         }
+        // Second right-click on a Link or Repeater: hide its zone at once, before the server answers.
+        if (level.isClientSide && !player.isShiftKeyDown() && (state.is(StorageRegistries.LINK.get()) || state.is(StorageRegistries.REPEATER.get())))
+            fr.lkdm.homelink.storage.network.CoverageState.clickedLocally(pos);
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
 }

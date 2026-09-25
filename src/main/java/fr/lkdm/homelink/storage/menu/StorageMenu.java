@@ -19,11 +19,14 @@ import java.util.*;
 import fr.lkdm.homelink.storage.config.StorageConfig;
 import fr.lkdm.homelink.storage.storage.index.StorageIndex;
 import fr.lkdm.homelink.storage.storage.inventory.StorageInventoryAdapter;
+import fr.lkdm.homelink.storage.storage.inventory.StorageWithdrawal;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 
-/** Indexed browser; withdrawals are explicit server-authorized commands. */
+/** Terminal item browser or Controller management view; every command is server-authorized for its block. */
 public final class StorageMenu extends AbstractContainerMenu {
+    /** Distinct variants one recipe-viewer request may fetch. */
+    public static final int MAX_BATCH = 16;
     private final BlockPos pos;
     private final StorageBlockEntity source;
     private final ServerPlayer viewer;
@@ -44,6 +47,11 @@ public final class StorageMenu extends AbstractContainerMenu {
     private long sentIndex = -1, sentMetadata = -1;
     private UUID sentController;
     private boolean first = true;
+    /** Hash of the last inventory list sent; 0 forces a resend. */
+    private int sentLocations;
+    /** Set by a command: the answer is sent in the same tick instead of waiting for the next cycle. */
+    private boolean urgent;
+    private static final int URGENT_FRAGMENTS = 8;
     private int ticks;
     private long lastCommand = Long.MIN_VALUE;
     public StorageMenu(int id, Inventory inventory, RegistryFriendlyByteBuf data) { this(id, inventory, data.readBlockPos()); }
@@ -64,13 +72,17 @@ public final class StorageMenu extends AbstractContainerMenu {
     @Override public void broadcastChanges() {
         super.broadcastChanges();
         if (viewer == null || !stillValid(viewer)) return;
-        if (++ticks % 2 != 0) return;
+        // Every other tick, or right away after a command such as a withdrawal.
+        if (++ticks % 2 != 0 && !urgent) return;
         StorageBlockEntity controller = controller();
         if (controller != null && !controller.canAccess(viewer)) { viewer.closeContainer(); return; }
         UUID identity = controller == null ? null : controller.id();
-        if (!Objects.equals(sentController, identity)) { first = true; clearPending(); sent.clear(); sentIndex = -1; sentMetadata = -1; sentController = identity; }
-        if (!hasPending() && (first || ticks % 20 == 0)) prepare(controller);
-        if (hasPending()) PacketDistributor.sendToPlayer(viewer, new StoragePackets.Data(containerId, nextPacket()));
+        if (!Objects.equals(sentController, identity)) { first = true; clearPending(); sent.clear(); sentIndex = -1; sentMetadata = -1; sentLocations = 0; sentController = identity; }
+        // Two revision comparisons when nothing changed, so checking often costs nothing.
+        if (!hasPending()) prepare(controller);
+        for (int fragments = 0; hasPending() && fragments < (urgent ? URGENT_FRAGMENTS : 1); fragments++)
+            PacketDistributor.sendToPlayer(viewer, new StoragePackets.Data(containerId, nextPacket()));
+        urgent = false;
     }
 
     private void prepare(StorageBlockEntity controller) {
@@ -86,19 +98,28 @@ public final class StorageMenu extends AbstractContainerMenu {
             packet.putLong("Items", index.totalItems()); packet.putInt("Unique", index.uniqueItems()); packet.putInt("Inventories", index.inventoryCount());
             packet.putInt("Occupied", index.occupiedSlots()); packet.putInt("Slots", index.totalSlots()); packet.putInt("Full", index.fullInventories());
             controller.zones().forEach(zoneTag::putString);
+            // The inventory list is resent only when one of its entries changed, not on every item change.
+            List<StorageData.Location> current = new ArrayList<>(controller.connections().size());
             for (var connection : controller.connections().values()) {
-                pendingLocations.add(new StorageData.Location(connection.linkId,
+                current.add(new StorageData.Location(connection.linkId,
                         connection.inventoryPos == null ? connection.linkPos : connection.inventoryPos,
                         connection.name, connection.zone, connection.status.name()));
             }
+            int locationsHash = current.hashCode();
+            if (first || locationsHash != sentLocations) {
+                pendingLocations.addAll(current);
+                packet.putBoolean("LocationsReset", true);
+                sentLocations = locationsHash;
+            }
             Set<Long> alive = new HashSet<>();
-            for (var entry : index.entries()) {
+            // The Controller manages inventories and zones; item rows are only sent to Terminals.
+            if (!managesNetwork()) for (var entry : index.entries()) {
                 alive.add(entry.id());
                 if (!Objects.equals(sent.get(entry.id()), entry.revision())) pendingRows.add(entry);
             }
             sent.keySet().stream().filter(id -> !alive.contains(id)).forEach(pendingRemoved::add);
             sent.keySet().retainAll(alive);
-        } else { sent.clear(); packet.putBoolean("Reset", true); }
+        } else { sent.clear(); sentLocations = 0; packet.putBoolean("Reset", true); }
         packet.putBoolean("Header", true); packet.put("Zones", zoneTag);
         pendingHeader = packet; sentIndex = revision; sentMetadata = metadata;
     }
@@ -117,21 +138,28 @@ public final class StorageMenu extends AbstractContainerMenu {
         CompoundTag packet = new CompoundTag();
         int limit = StorageConfig.MAX_PACKET_BYTES.get() - 1024;
         int rowLimit = StorageConfig.NETWORK_ROWS.get();
-        ListTag locationBatch = new ListTag(); packet.put("Locations", locationBatch);
-        while (!pendingLocations.isEmpty() && locationBatch.size() < rowLimit) {
-            var location = pendingLocations.peekFirst();
-            CompoundTag tag = new CompoundTag(); tag.putUUID("Id", location.linkId()); tag.putLong("Pos", location.position().asLong());
-            tag.putString("Name", location.name()); tag.putString("Zone", location.zone()); tag.putString("Status", location.status());
-            if (encodedBytes(packet) + encodedBytes(tag) >= limit) break;
-            locationBatch.add(tag); pendingLocations.removeFirst();
-        }
-        if (!locationBatch.isEmpty()) return packet;
+        // Item changes first: a withdrawal must not wait behind the inventory list.
         if (!pendingRemoved.isEmpty()) {
             int count = Math.min(pendingRemoved.size(), Math.min(rowLimit * 16, limit / 16));
             long[] removed = new long[count]; for (int i = 0; i < count; i++) removed[i] = pendingRemoved.removeFirst();
             packet.putLongArray("Removed", removed); return packet;
         }
+        if (pendingRows.isEmpty()) {
+            ListTag locationBatch = new ListTag(); packet.put("Locations", locationBatch);
+            int size = encodedBytes(packet);
+            while (!pendingLocations.isEmpty() && locationBatch.size() < rowLimit) {
+                var location = pendingLocations.peekFirst();
+                CompoundTag tag = new CompoundTag(); tag.putUUID("Id", location.linkId()); tag.putLong("Pos", location.position().asLong());
+                tag.putString("Name", location.name()); tag.putString("Zone", location.zone()); tag.putString("Status", location.status());
+                // Each element's standalone size bounds its list encoding, so the running sum never undercounts.
+                int bytes = encodedBytes(tag);
+                if (size + bytes >= limit) break;
+                locationBatch.add(tag); pendingLocations.removeFirst(); size += bytes;
+            }
+            return packet;
+        }
         ListTag batch = new ListTag(); packet.put("Rows", batch);
+        int size = encodedBytes(packet);
         while (!pendingRows.isEmpty() && batch.size() < rowLimit) {
             var entry = pendingRows.peekFirst();
             CompoundTag row = new CompoundTag(); row.putLong("Id", entry.id()); row.putLong("Count", entry.total());
@@ -150,8 +178,9 @@ public final class StorageMenu extends AbstractContainerMenu {
             ListTag counts = new ListTag();
             entry.locations().forEach((position, count) -> { CompoundTag loc = new CompoundTag(); loc.putLong("Pos", position.asLong()); loc.putLong("Count", count); counts.add(loc); });
             row.put("Locations", counts);
-            if (!batch.isEmpty() && encodedBytes(packet) + encodedBytes(row) >= limit) break;
-            batch.add(row); pendingRows.removeFirst(); sent.put(entry.id(), entry.revision());
+            int bytes = encodedBytes(row);
+            if (!batch.isEmpty() && size + bytes >= limit) break;
+            batch.add(row); pendingRows.removeFirst(); sent.put(entry.id(), entry.revision()); size += bytes;
         }
         return packet;
     }
@@ -165,7 +194,8 @@ public final class StorageMenu extends AbstractContainerMenu {
         if (data.getBoolean("Header")) {
             clientName = data.getString("Name");
             stats = new StorageData.Stats(data.getLong("Items"), data.getInt("Unique"), data.getInt("Inventories"), data.getInt("Occupied"), data.getInt("Slots"), data.getInt("Full"), data.getBoolean("Connected"));
-            locations.clear(); zones.clear();
+            if (data.getBoolean("LocationsReset")) locations.clear();
+            zones.clear();
             CompoundTag zoneTag = data.getCompound("Zones"); for (String key : zoneTag.getAllKeys()) zones.put(key, zoneTag.getString(key));
         }
         for (var value : data.getList("Locations", 10)) { CompoundTag loc = (CompoundTag) value; UUID id = loc.getUUID("Id"); locations.put(id, new StorageData.Location(id, BlockPos.of(loc.getLong("Pos")), loc.getString("Name"), loc.getString("Zone"), loc.getString("Status"))); }
@@ -185,8 +215,9 @@ public final class StorageMenu extends AbstractContainerMenu {
         lastCommand = time;
         StorageBlockEntity controller = controller();
         if (!stillValid(player) || controller == null || !controller.canAccess(player)) return;
+        if (!allowed(action, managesNetwork())) return;
         var permission = action.equals("locate") ? fr.lkdm.homecore.api.security.Permission.VIEW
-                : action.equals("refresh") || action.equals("withdraw") ? fr.lkdm.homecore.api.security.Permission.CONTROL : fr.lkdm.homecore.api.security.Permission.CONFIGURE;
+                : action.equals("refresh") || action.startsWith("withdraw") ? fr.lkdm.homecore.api.security.Permission.CONTROL : fr.lkdm.homecore.api.security.Permission.CONFIGURE;
         if (!controller.permission(player, permission)) return;
         try {
             switch (action) {
@@ -202,14 +233,51 @@ public final class StorageMenu extends AbstractContainerMenu {
                     if (parts.length != 2 || !controller.id().equals(sentController)) return;
                     long rowId = Long.parseLong(parts[0]);
                     if (!sent.containsKey(rowId)) return;
-                    int count = fr.lkdm.homelink.storage.storage.inventory.StorageWithdrawal.withdraw(
+                    int count = StorageWithdrawal.withdraw(
                             player, controller, UUID.fromString(target), rowId, Integer.parseInt(parts[1]));
                     player.displayClientMessage(Component.translatable(count > 0
                             ? "message.homelink_storage.withdrawn" : "message.homelink_storage.withdraw_failed", count), true);
                 }
+                case "withdraw_any" -> {
+                    // target: preferred inventory or empty; value: "row:amount".
+                    if (!controller.id().equals(sentController)) return;
+                    UUID preferred = target.isEmpty() ? null : UUID.fromString(target);
+                    String[] parts = value.split(":", -1);
+                    if (parts.length != 2) return;
+                    long rowId = Long.parseLong(parts[0]);
+                    if (!sent.containsKey(rowId)) return;
+                    int count = StorageWithdrawal.withdrawAny(player, controller, preferred, rowId, Integer.parseInt(parts[1]));
+                    player.displayClientMessage(Component.translatable(count > 0
+                            ? "message.homelink_storage.withdrawn" : "message.homelink_storage.withdraw_failed", count), true);
+                }
+                case "withdraw_batch" -> {
+                    // value: "row:amount;row:amount..." planned by a recipe viewer; bounded in size and total.
+                    if (!controller.id().equals(sentController)) return;
+                    String[] requests = value.split(";", -1);
+                    if (requests.length > MAX_BATCH) return;
+                    Map<Long, Integer> planned = new LinkedHashMap<>();
+                    for (String request : requests) {
+                        String[] parts = request.split(":", -1);
+                        if (parts.length != 2) return;
+                        long rowId = Long.parseLong(parts[0]);
+                        int amount = Integer.parseInt(parts[1]);
+                        if (!sent.containsKey(rowId) || amount < 1) return;
+                        planned.merge(rowId, amount, Integer::sum);
+                    }
+                    if (planned.values().stream().mapToLong(Integer::longValue).sum() > StorageWithdrawal.MAX_REQUEST) return;
+                    int requested = 0, count = 0;
+                    for (var request : planned.entrySet()) {
+                        requested += request.getValue();
+                        count += StorageWithdrawal.withdrawAny(player, controller, null, request.getKey(), request.getValue());
+                    }
+                    player.displayClientMessage(Component.translatable(count == 0 ? "message.homelink_storage.withdraw_failed"
+                            : count < requested ? "message.homelink_storage.ingredients_partial" : "message.homelink_storage.ingredients_withdrawn",
+                            count, requested), true);
+                }
                 default -> { }
             }
         } catch (IllegalArgumentException ignored) { /* Untrusted bounded input: reject without changing other state. */ }
+        urgent = true; // Answer this command with the next broadcast, in the same tick.
     }
     private void locate(ServerPlayer player, StorageBlockEntity controller, UUID linkId) {
         var connection = controller.connections().get(linkId);
@@ -233,9 +301,21 @@ public final class StorageMenu extends AbstractContainerMenu {
         PacketDistributor.sendToPlayer(player, new StoragePackets.Data(containerId, response));
     }
     public BlockPos position() { return pos; }
+
+    /** Opened on the Controller: network management. Otherwise opened on a Terminal: item browsing. */
+    public boolean managesNetwork() { return source != null && source.isController(); }
+
+    private static final Set<String> CONTROLLER_ACTIONS = Set.of("rename_controller", "rename_inventory", "set_zone",
+            "create_zone", "forget_inventory", "refresh");
+    private static final Set<String> TERMINAL_ACTIONS = Set.of("locate", "withdraw", "withdraw_any", "withdraw_batch");
+
+    /** Each block only accepts its own role's commands, whatever a client sends. */
+    public static boolean allowed(String action, boolean controller) {
+        return controller ? CONTROLLER_ACTIONS.contains(action) : TERMINAL_ACTIONS.contains(action);
+    }
     @Override public ItemStack quickMoveStack(Player player, int index) { return ItemStack.EMPTY; }
     @Override public boolean stillValid(Player player) {
-        return player.level().isClientSide || (source != null && !source.isRemoved() && player instanceof ServerPlayer serverPlayer && source.canAccess(serverPlayer)
+        return player.level().isClientSide || (source != null && !source.isRemoved() && (source.isTerminal() || source.isController()) && player instanceof ServerPlayer serverPlayer && source.canAccess(serverPlayer)
                 && player.level().getBlockEntity(pos) == source && player.distanceToSqr(pos.getCenter()) <= 64);
     }
 }

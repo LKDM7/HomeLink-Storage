@@ -2,11 +2,16 @@
 
 Source de vérité : https://github.com/LKDM7/HomeCore
 
-Inspection du 19 septembre 2026 : branche distante `main`, commit
-`0557f41f80b0a900990b11b85146e1937676a615`, identique au checkout local propre.
-Tag et release publiés : `v1.0.0`. La branche principale fournit **1.3.0**,
-Minecraft 1.21.1, Java 21, NeoForge 21.1.250, plage `[21.1.250,21.2)`.
-Storage utilise 21.1.251, compatible avec cette plage.
+Mise à jour du 25 septembre 2026 : Storage cible **HomeCore 1.6.1**, commit
+`fa8d6854d8686195d760ca9e5988bbcf2c29c8bb` de `main` (déjà poussé sur `origin`). La plage
+déclarée est `[1.6.1,2.0.0)`. L'API publique `fr.lkdm.homecore.api.*` n'a pas changé depuis
+1.3.0 (`DashboardAPI.API_VERSION` vaut toujours `1.3.0`). La version 1.6.1 ajoute les
+composants partagés `homecore:homelink_circuit_board` et `homecore:homelink_microprocessor`,
+assemblés à l'Electronics Workbench. Les recettes Storage les utilisent désormais (voir
+[RECIPES.md](RECIPES.md)), comme HomeLink Farm. Minecraft 1.21.1, Java 21, NeoForge
+21.1.250, plage `[21.1.250,21.2)`. Storage utilise 21.1.251, compatible avec cette plage.
+
+Inspection initiale du 19 septembre 2026 : commit `0557f41` (HomeCore 1.3.0).
 
 Inspectés : build.gradle, settings.gradle, gradle.properties, metadata NeoForge,
 README, docs/PROTOCOL.md, docs/VALIDATION.md, exemple et packages publics.

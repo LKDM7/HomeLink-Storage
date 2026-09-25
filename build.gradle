@@ -8,9 +8,17 @@ version = mod_version
 group = mod_group_id
 base { archivesName = mod_id }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
-repositories { mavenCentral() }
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.blamejared.com/'; content { includeGroup 'mezz.jei'; includeGroup 'net.mezzdev.config' } }
+}
+// JEI is an optional client integration: compiled against its API, never embedded or required.
+def withJei = providers.gradleProperty('withJei').isPresent()
 dependencies {
     implementation "fr.lkdm.homecore:homecore:${homecore_version}"
+    compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    if (withJei) runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 }
 sourceSets {
     verification {
@@ -21,6 +29,7 @@ sourceSets {
 configurations {
     verificationImplementation.extendsFrom implementation
     verificationRuntimeOnly.extendsFrom runtimeOnly
+    verificationCompileOnly.extendsFrom compileOnly
 }
 def withDashboard = providers.gradleProperty('withDashboard').isPresent()
 if (withDashboard) {
@@ -64,7 +73,7 @@ tasks.named('runPersistence') {
 }
 def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
     def values = ['minecraft_version_range', 'neo_version_range', 'loader_version_range',
-                  'mod_id', 'mod_name', 'mod_license', 'mod_version', 'mod_authors', 'mod_description', 'homecore_version_range']
+                  'mod_id', 'mod_name', 'mod_license', 'mod_version', 'mod_authors', 'mod_description', 'homecore_version_range', 'jei_version_range']
             .collectEntries { [(it): project.property(it)] }
     inputs.properties values
     expand values
@@ -122,8 +131,10 @@ tasks.named('runSmoke') {
                        'STORAGE_RECIPE_CHECKS_OK', 'STORAGE_COVERAGE_CHECKS_OK', 'STORAGE_MANUAL_CHECKS_OK',
                        'STORAGE_MANAGEMENT_CHECKS_OK', 'STORAGE_CONTROLLER_CHECKS_OK',
                        'STORAGE_DOUBLE_CHEST_CHECKS_OK', 'STORAGE_WITHDRAWAL_CHECKS_OK', 'STORAGE_WITHDRAWAL_CLIENT_OK',
-                       'STORAGE_TERMINAL_MOUNT_CHECKS_OK', 'STORAGE_LINK_KEY_CHECKS_OK', 'STORAGE_DEPOSIT_CLIENT_CHECKS_OK']
+                       'STORAGE_TERMINAL_MOUNT_CHECKS_OK', 'STORAGE_LINK_KEY_CHECKS_OK', 'STORAGE_DEPOSIT_CLIENT_CHECKS_OK',
+                       'STORAGE_WITHDRAW_ANY_CHECKS_OK', 'STORAGE_INGREDIENT_PLAN_CHECKS_OK', 'STORAGE_RECIPE_VIEWER_CHECKS_OK', 'STORAGE_TERMINAL_ONLY_CHECKS_OK', 'STORAGE_CONTROLLER_SCREEN_CHECKS_OK', 'STORAGE_COVERAGE_ZONE_CHECKS_OK', 'STORAGE_COVERAGE_TOGGLE_CHECKS_OK']
         if (withDashboard) markers += 'STORAGE_DASHBOARD_CHECKS_OK'
+        if (withJei) markers += 'STORAGE_RECIPE_VIEWER_CHECKS_OK jei=true'
         if (markers.any { !log.contains(it) } || log.contains('STORAGE_SMOKE_FAILED')) {
             throw new GradleException('In-game verification failed: inspect build/validation/client/logs/latest.log')
         }

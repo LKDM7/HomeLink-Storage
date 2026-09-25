@@ -94,6 +94,7 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
     public boolean isController() { return getBlockState().is(StorageRegistries.CONTROLLER.get()); }
     public boolean isLink() { return getBlockState().is(StorageRegistries.LINK.get()); }
     public boolean isRepeater() { return getBlockState().is(StorageRegistries.REPEATER.get()); }
+    public boolean isTerminal() { return getBlockState().is(StorageRegistries.TERMINAL.get()); }
     public boolean isCoverageNode() { return isLink() || isRepeater(); }
     public Map<UUID, InventoryConnection> connections() { return Collections.unmodifiableMap(connections); }
     public Map<UUID, CoverageNode> coverageNodes() { return Collections.unmodifiableMap(coverage); }

@@ -2,26 +2,15 @@
   "type": "minecraft:crafting_shaped",
   "category": "redstone",
   "pattern": [
-    " C ",
+    " B ",
     "RQR",
     "III"
   ],
   "key": {
-    "C": {
-      "item": "minecraft:copper_ingot"
-    },
-    "R": {
-      "item": "minecraft:redstone"
-    },
-    "Q": {
-      "item": "minecraft:repeater"
-    },
-    "I": {
-      "item": "minecraft:iron_ingot"
-    }
+    "B": { "item": "homecore:homelink_circuit_board" },
+    "R": { "item": "minecraft:redstone" },
+    "Q": { "item": "minecraft:repeater" },
+    "I": { "item": "minecraft:iron_ingot" }
   },
-  "result": {
-    "id": "homelink_storage:storage_repeater",
-    "count": 1
-  }
+  "result": { "id": "homelink_storage:storage_repeater", "count": 1 }
 }

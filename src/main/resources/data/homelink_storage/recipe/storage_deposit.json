@@ -1,1 +1,16 @@
-{"type":"minecraft:crafting_shaped","category":"redstone","pattern":[" C ","RHR"," I "],"key":{"C":{"item":"minecraft:chest"},"R":{"item":"minecraft:redstone"},"H":{"item":"minecraft:hopper"},"I":{"item":"minecraft:copper_ingot"}},"result":{"id":"homelink_storage:storage_deposit","count":1}}
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    " C ",
+    "RHR",
+    " B "
+  ],
+  "key": {
+    "C": { "item": "minecraft:chest" },
+    "R": { "item": "minecraft:redstone" },
+    "H": { "item": "minecraft:hopper" },
+    "B": { "item": "homecore:homelink_circuit_board" }
+  },
+  "result": { "id": "homelink_storage:storage_deposit", "count": 1 }
+}

@@ -1,6 +1,6 @@
 # Guide utilisateur — HomeLink Storage 1.0.0
 
-Installer HomeCore 1.3.0 et HomeLink Storage 1.0.0 sur Minecraft 1.21.1 avec
+Installer HomeCore 1.6.1 et HomeLink Storage 1.0.0 sur Minecraft 1.21.1 avec
 NeoForge 21.1.251 et Java 21, côté client et serveur. Les quatre blocs sont
 craftables et disponibles dans l’onglet créatif HomeLink Storage.
 
@@ -66,11 +66,40 @@ privé de dix secondes. Un inventaire absent ou déchargé ne peut pas être loc
 
 ## Retirer des objets
 
-Ouvrir le Controller ou le Terminal, sélectionner un objet puis son inventaire source.
-**Prendre 1** retire un objet ; **Prendre 64** en retire au maximum 64, dans la limite
-du stock et des emplacements libres dans l’inventaire du joueur. Les objets sont réellement
-enlevés du coffre, et l’index est mis à jour après le transfert. Si plusieurs variantes
-sont regroupées, le premier clic ouvre la vue Variantes pour choisir précisément l’objet.
+Ouvrir le Terminal. Il n’est plus nécessaire de choisir le coffre :
+le serveur puise dans tous les inventaires en ligne qui contiennent l’objet, en
+commençant par l’inventaire sélectionné dans la liste de droite.
+
+| Geste sur la grille | Effet |
+| --- | --- |
+| Clic gauche | Sélectionne l’objet (détails, emplacements, Localiser) |
+| Double-clic ou Maj+clic | Retire une stack (64, 16 ou 1 selon l’objet) |
+| Clic droit | Retire une demi-stack |
+| Ctrl+clic | Retire un seul objet |
+| Clic molette | Remplit l’inventaire avec cet objet |
+
+Le champ **Quantité** (1 à 2 304), validé par Entrée ou **Prendre**, retire un nombre
+libre. Tout retrait est borné par le stock et les emplacements libres de l’inventaire
+du joueur. Les objets sont réellement enlevés des coffres, et l’index est mis à jour
+après chaque transfert. Dans la vue regroupée, un objet présent en plusieurs variantes
+fournit sa variante sans composants ; s’il n’en a pas, la vue Variantes s’ouvre pour
+choisir précisément l’objet.
+
+### Avec JEI (optionnel)
+
+Storage fonctionne sans JEI. Si JEI est installé côté client :
+
+- **R** / **U** sur un objet de la grille ouvre ses recettes et usages ;
+- le bouton **⇄** à droite de la recherche synchronise la recherche du Terminal avec
+  celle de JEI (`#tag` du Terminal devient `$tag` dans JEI) ;
+- le bouton **+** d’une recette, Terminal ouvert, récupère dans l’inventaire les
+  ingrédients qui manquent (Maj+**+** : autant de fabrications qu’une stack de chaque
+  ingrédient le permet). Les ingrédients déjà portés sont comptés, les variantes
+  renommées ou enchantées ne sont jamais utilisées implicitement, et les emplacements
+  introuvables dans le réseau sont surlignés en rouge.
+
+EMI n’a pas d’intégration dédiée. Le Terminal mesure 380 px de large : à une grande
+échelle d’interface, JEI peut manquer de place pour afficher sa liste à côté.
 
 La permission HomeCore CONTROL est nécessaire. Un inventaire joueur plein ne consomme
 aucun objet. Un double coffre à cheval sur deux chunks fournit ses 54 emplacements si
@@ -79,7 +108,8 @@ est indisponible. Détruire une moitié transforme normalement l’autre en coff
 
 ## Organiser et surveiller
 
-Le panneau de gestion permet de renommer le Controller ou un inventaire, de créer une
+L’écran du **Controller** (clic droit normal) est le panneau de gestion. Le Terminal
+n’y donne pas accès : il sert seulement à trouver et prendre des objets. Ce panneau permet de renommer le Controller ou un inventaire, de créer une
 zone et d’affecter un inventaire à cette zone. Un inventaire hors ligne peut être
 oublié ; un inventaire encore présent dans un chunk couvert sera automatiquement
 redécouvert. Les noms ne servent jamais d’identité technique : chaque Controller,
@@ -131,10 +161,28 @@ que compté partiellement.
 
 ## English quick start
 
-Install HomeCore 1.3.0 and HomeLink Storage 1.0.0 on both sides. Place a Controller,
+Install HomeCore 1.6.1 and HomeLink Storage 1.0.0 on both sides. Place a Controller,
 then a Link in the chunk containing your inventories. Sneak-use the Controller with
 an empty hand, then bind the Link, Repeaters and Terminal. Each active Repeater covers
 one cardinally adjacent chunk in a connected chain. Open the Terminal to search,
 manage zones and locate inventories; use the `?` button for the in-game manual.
 Take 1 / Take 64 withdraw real objects from the selected inventory with CONTROL permission.
 Storage never forces chunks to load.
+
+## Voir la zone d’action d’un Connecteur ou d’un Répéteur
+
+Un clic droit (sans s’accroupir) sur un Connecteur (Storage Link) ou un Répéteur affiche
+son état dans la barre d’action et dessine sa **zone d’action** pendant 30 secondes : le
+chunk entier, sur toute sa hauteur, entouré d’une clôture lumineuse, avec un quadrillage
+au sol et un cadre autour du bloc. Les zones des autres nœuds du même réseau sont aussi
+dessinées, ce qui montre la chaîne de Répéteurs. Un second clic droit sur le même bloc
+masque la zone immédiatement.
+
+| Couleur | Signification |
+| --- | --- |
+| Cuivre | Bloc cliqué, actif |
+| Vert | Autre nœud actif du réseau |
+| Rouge | Nœud hors ligne (non relié, chaîne coupée ou chunk déchargé) |
+
+L’affichage est local : les autres joueurs ne le voient pas. Seules les positions des
+nœuds et de leurs chunks sont transmises, jamais le contenu des inventaires.

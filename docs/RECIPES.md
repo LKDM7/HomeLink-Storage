@@ -1,61 +1,100 @@
 # Recettes / Recipes
 
-Les quatre recettes utilisent une table de fabrication 3 × 3 et apparaissent dans le
-livre après obtention de cuivre ou de redstone.
+Toutes les recettes se font sur une table de fabrication 3 × 3. Elles apparaissent dans
+le livre après l’obtention de cuivre ou de redstone.
+
+Comme HomeLink Farm, les appareils utilisent les composants électroniques partagés de
+HomeCore 1.6.1 :
+
+- **Carte électronique HomeLink** / HomeLink Circuit Board (`homecore:homelink_circuit_board`) :
+  4 cuivre + 4 redstone + 1 quartz → 2 cartes ;
+- **Microprocesseur HomeLink** / HomeLink Microprocessor (`homecore:homelink_microprocessor`) :
+  1 carte + 4 pépites d’or + 2 cuivre + 1 redstone + 1 quartz → 1 microprocesseur.
+
+Ces deux composants s’assemblent uniquement à l’**Electronics Workbench** de HomeCore.
+Le Controller, qui gère le réseau, demande un microprocesseur. Le Terminal, le Link, le
+Repeater et le Deposit demandent une carte. La clé USB reste un simple outil vanilla.
 
 ## Storage Controller — 1
 
 ```text
 I C I
-R Q R
+R M R
 I C I
 ```
 
 - I : lingot de fer / iron ingot × 4
 - C : lingot de cuivre / copper ingot × 2
 - R : poudre de redstone / redstone dust × 2
-- Q : comparateur / comparator × 1
+- M : microprocesseur HomeLink / HomeLink microprocessor × 1
 
 ## Storage Terminal — 1
 
 ```text
 I G I
-R Q R
+R B R
 I C I
 ```
 
 - I : lingot de fer / iron ingot × 4
 - G : verre / glass × 1
 - R : poudre de redstone / redstone dust × 2
-- Q : quartz du Nether / Nether quartz × 1
+- B : carte électronique HomeLink / HomeLink circuit board × 1
 - C : lingot de cuivre / copper ingot × 1
 
 ## Storage Link — 4
 
 ```text
   C
-R Q R
+R B R
   I
 ```
 
 - C : lingot de cuivre / copper ingot × 1
 - R : poudre de redstone / redstone dust × 2
-- Q : quartz du Nether / Nether quartz × 1
+- B : carte électronique HomeLink / HomeLink circuit board × 1
 - I : lingot de fer / iron ingot × 1
 
 ## Storage Repeater — 1
 
 ```text
-  C
+  B
 R Q R
 I I I
 ```
 
-- C : lingot de cuivre / copper ingot × 1
+- B : carte électronique HomeLink / HomeLink circuit board × 1
 - R : poudre de redstone / redstone dust × 2
 - Q : répéteur de redstone / redstone repeater × 1
 - I : lingot de fer / iron ingot × 3
 
-Une pioche de n’importe quel niveau récupère les quatre blocs. Chacun possède un modèle
+## Storage Deposit — 1
+
+```text
+  C
+R H R
+  B
+```
+
+- C : coffre / chest × 1
+- R : poudre de redstone / redstone dust × 2
+- H : entonnoir / hopper × 1
+- B : carte électronique HomeLink / HomeLink circuit board × 1
+
+## Clé USB de liaison / USB Linking Key — 1
+
+```text
+  I
+R C R
+```
+
+- I : lingot de fer / iron ingot × 1
+- R : poudre de redstone / redstone dust × 2
+- C : lingot de cuivre / copper ingot × 1
+
+Une pioche de n’importe quel niveau récupère les cinq blocs. Chacun possède un modèle
 3D distinct. Les géométries et matériaux vanilla utilisés sont documentés dans
 `assets/homelink_storage/MATERIALS.md`.
+
+Avec JEI, le bouton **+** d’une de ces recettes, Terminal ouvert, récupère les
+composants et les matériaux qui manquent depuis le réseau de stockage.

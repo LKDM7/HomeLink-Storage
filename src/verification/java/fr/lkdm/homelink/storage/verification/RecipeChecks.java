@@ -22,11 +22,12 @@ import net.minecraft.world.phys.BlockHitResult;
 public final class RecipeChecks {
     public static void run(ServerPlayer player) {
         Item iron = Items.IRON_INGOT, copper = Items.COPPER_INGOT, redstone = Items.REDSTONE;
-        recipe(player, "storage_controller", List.of(iron, copper, iron, redstone, Items.COMPARATOR, redstone, iron, copper, iron), StorageRegistries.CONTROLLER.get().asItem(), 1);
-        recipe(player, "storage_terminal", List.of(iron, Items.GLASS, iron, redstone, Items.QUARTZ, redstone, iron, copper, iron), StorageRegistries.TERMINAL.get().asItem(), 1);
-        recipe(player, "storage_link", List.of(Items.AIR, copper, Items.AIR, redstone, Items.QUARTZ, redstone, Items.AIR, iron, Items.AIR), StorageRegistries.LINK.get().asItem(), 4);
-        recipe(player, "storage_repeater", List.of(Items.AIR, copper, Items.AIR, redstone, Items.REPEATER, redstone, iron, iron, iron), StorageRegistries.REPEATER.get().asItem(), 1);
-        recipe(player, "storage_deposit", List.of(Items.AIR, Items.CHEST, Items.AIR, redstone, Items.HOPPER, redstone, Items.AIR, copper, Items.AIR), StorageRegistries.DEPOSIT.get().asItem(), 1);
+        Item board = fr.lkdm.homecore.registry.HomeCoreItems.HOMELINK_CIRCUIT_BOARD.get(), chip = fr.lkdm.homecore.registry.HomeCoreItems.HOMELINK_MICROPROCESSOR.get();
+        recipe(player, "storage_controller", List.of(iron, copper, iron, redstone, chip, redstone, iron, copper, iron), StorageRegistries.CONTROLLER.get().asItem(), 1);
+        recipe(player, "storage_terminal", List.of(iron, Items.GLASS, iron, redstone, board, redstone, iron, copper, iron), StorageRegistries.TERMINAL.get().asItem(), 1);
+        recipe(player, "storage_link", List.of(Items.AIR, copper, Items.AIR, redstone, board, redstone, Items.AIR, iron, Items.AIR), StorageRegistries.LINK.get().asItem(), 4);
+        recipe(player, "storage_repeater", List.of(Items.AIR, board, Items.AIR, redstone, Items.REPEATER, redstone, iron, iron, iron), StorageRegistries.REPEATER.get().asItem(), 1);
+        recipe(player, "storage_deposit", List.of(Items.AIR, Items.CHEST, Items.AIR, redstone, Items.HOPPER, redstone, Items.AIR, board, Items.AIR), StorageRegistries.DEPOSIT.get().asItem(), 1);
         gestures(player);
         LogUtils.getLogger().info("STORAGE_RECIPE_CHECKS_OK recipes=5 matches=true results=true binding_gesture=true unauthorized_binding_denied=true");
     }
@@ -56,6 +57,40 @@ public final class RecipeChecks {
             check(link.controller() == controller, "Sneak-use gesture did not bind the link");
             interact(player, denied.getBlockPos());
             check(denied.controller() == null, "Sneak-use gesture bypassed ownership");
+            // Only the Terminal browses storage: infrastructure blocks report state without any menu.
+            player.setShiftKeyDown(false);
+            StorageBlockEntity repeater = place(player, new BlockPos(6, 5, 6), StorageRegistries.REPEATER.get(), player.getUUID());
+            try {
+                for (var block : List.of(link, repeater)) {
+                    interact(player, block.getBlockPos());
+                    check(player.containerMenu == player.inventoryMenu, "Link or Repeater opened a menu: " + block.getBlockState().getBlock());
+                    check(!new fr.lkdm.homelink.storage.menu.StorageMenu(0, player.getInventory(), block.getBlockPos()).stillValid(player),
+                            "Storage menu accepted a Link or Repeater source: " + block.getBlockState().getBlock());
+                }
+                // The Controller opens its management screen; the Terminal only takes items.
+                interact(player, controller.getBlockPos());
+                check(player.containerMenu instanceof fr.lkdm.homelink.storage.menu.StorageMenu menu && menu.managesNetwork(),
+                        "Controller did not open its management screen");
+                player.closeContainer();
+                for (String action : List.of("rename_controller", "rename_inventory", "set_zone", "create_zone", "forget_inventory", "refresh")) {
+                    check(fr.lkdm.homelink.storage.menu.StorageMenu.allowed(action, true), "Controller refused " + action);
+                    check(!fr.lkdm.homelink.storage.menu.StorageMenu.allowed(action, false), "Terminal accepted " + action);
+                }
+                for (String action : List.of("locate", "withdraw", "withdraw_any", "withdraw_batch")) {
+                    check(fr.lkdm.homelink.storage.menu.StorageMenu.allowed(action, false), "Terminal refused " + action);
+                    check(!fr.lkdm.homelink.storage.menu.StorageMenu.allowed(action, true), "Controller accepted " + action);
+                }
+                check(statusKey(repeater).endsWith("node_unbound"), "Unbound repeater status");
+                var alone = fr.lkdm.homelink.storage.storage.network.StorageBinding.coverage(repeater).chunks();
+                check(alone.size() == 1 && alone.get(0).focus() && !alone.get(0).active()
+                        && alone.get(0).x() == (repeater.getBlockPos().getX() >> 4) && alone.get(0).z() == (repeater.getBlockPos().getZ() >> 4),
+                        "Unbound repeater coverage zone");
+                var bound = fr.lkdm.homelink.storage.storage.network.StorageBinding.coverage(link).chunks();
+                check(bound.stream().filter(fr.lkdm.homelink.storage.network.CoverageState.Chunk::focus).count() == 1
+                        && bound.stream().anyMatch(chunk -> chunk.focus() && chunk.node().equals(link.getBlockPos())), "Bound link coverage zone");
+                check(!statusKey(link).endsWith("node_unbound"), "Bound link status");
+            } finally { player.serverLevel().destroyBlock(repeater.getBlockPos(), false); }
+            LogUtils.getLogger().info("STORAGE_TERMINAL_ONLY_CHECKS_OK controller_management=true link_menu=false repeater_menu=false server_menu_rejected=true role_actions=true status=true");
         } finally {
             player.setShiftKeyDown(false);
             player.getPersistentData().remove("HomeLinkStorageSelection");
@@ -63,6 +98,10 @@ public final class RecipeChecks {
         }
     }
 
+    private static String statusKey(StorageBlockEntity block) {
+        return ((net.minecraft.network.chat.contents.TranslatableContents)
+                fr.lkdm.homelink.storage.storage.network.StorageBinding.status(block).getContents()).getKey();
+    }
     private static void interact(ServerPlayer player, BlockPos pos) {
         player.gameMode.useItemOn(player, player.serverLevel(), ItemStack.EMPTY, InteractionHand.MAIN_HAND,
                 new BlockHitResult(pos.getCenter(), Direction.UP, pos, false));

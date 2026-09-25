@@ -62,8 +62,14 @@ public final class PacketChecks {
                 handler.setStackInSlot(0, stack);
                 controller.index().update(new BlockPos(i, 21, 0), handler);
             }
-            StorageMenu sender = new StorageMenu(93, player.getInventory(), position);
-            StorageMenu receiver = new StorageMenu(93, player.getInventory(), position);
+            // Item rows are only synchronized to Terminals: view the fixture through one.
+            BlockPos terminalPosition = position.above();
+            level.setBlockAndUpdate(terminalPosition, StorageRegistries.TERMINAL.get().defaultBlockState());
+            var terminal = (StorageBlockEntity) level.getBlockEntity(terminalPosition);
+            terminal.setOwner(player.getUUID());
+            check(terminal.bind(controller), "Packet fixture terminal not bound");
+            StorageMenu sender = new StorageMenu(93, player.getInventory(), terminalPosition);
+            StorageMenu receiver = new StorageMenu(93, player.getInventory(), terminalPosition);
             Method prepare = StorageMenu.class.getDeclaredMethod("prepare", StorageBlockEntity.class);
             Method pending = StorageMenu.class.getDeclaredMethod("hasPending");
             Method next = StorageMenu.class.getDeclaredMethod("nextPacket");
@@ -104,16 +110,53 @@ public final class PacketChecks {
                         "Complex variant simplification lacks correct warning key or variant identity: " + name);
             }
             check(receiver.clientStats().items() == 512_000_008_192L, "Snapshot header truncated long total");
+            // An item change on a 512-inventory network: only the header and the changed row travel,
+            // the inventory list is not resent and the client keeps it.
+            var changed = new ItemStackHandler(1);
+            changed.setStackInSlot(0, new ItemStack(Items.EMERALD, 7));
+            controller.index().update(new BlockPos(0, 22, 0), changed);
+            prepare.invoke(sender, controller);
+            int deltaFragments = 0;
+            boolean locationsResent = false;
+            while ((Boolean) pending.invoke(sender)) {
+                CompoundTag fragment = (CompoundTag) next.invoke(sender);
+                deltaFragments++;
+                locationsResent |= fragment.getBoolean("LocationsReset") || !fragment.getList("Locations", 10).isEmpty();
+                receiver.applyData(fragment, player.registryAccess());
+            }
+            check(!locationsResent && deltaFragments <= 3, "Item delta resent the inventory list: fragments=" + deltaFragments);
+            check(receiver.clientLocations().size() == 512 && receiver.clientRows().stream().anyMatch(row -> row.stack().is(Items.EMERALD) && row.count() == 7),
+                    "Item delta lost locations or the changed row");
             var commandWire = new RegistryFriendlyByteBuf(Unpooled.buffer(), player.registryAccess());
             try {
                 var command = new StoragePackets.Command(93, "rename_inventory", UUID.randomUUID().toString(), "界".repeat(64));
                 StoragePackets.Command.CODEC.encode(commandWire, command);
                 check(command.equals(StoragePackets.Command.CODEC.decode(commandWire)) && !commandWire.isReadable(), "Command codec roundtrip failed");
+                var batch = new StoragePackets.Command(93, "withdraw_batch", "", "9".repeat(StoragePackets.MAX_VALUE));
+                StoragePackets.Command.CODEC.encode(commandWire, batch);
+                check(batch.equals(StoragePackets.Command.CODEC.decode(commandWire)) && !commandWire.isReadable(), "Batch command roundtrip failed");
+                boolean rejected = false;
+                try { StoragePackets.Command.CODEC.encode(commandWire, new StoragePackets.Command(93, "withdraw_batch", "", "9".repeat(StoragePackets.MAX_VALUE + 1))); }
+                catch (RuntimeException expected) { rejected = true; }
+                check(rejected, "Oversized command value was encoded");
+                var zone = new java.util.ArrayList<fr.lkdm.homelink.storage.network.CoverageState.Chunk>();
+                for (int i = 0; i < StoragePackets.MAX_COVERAGE_CHUNKS; i++)
+                    zone.add(new fr.lkdm.homelink.storage.network.CoverageState.Chunk(-i, i * 3, new BlockPos(i, -60, -i), i % 2 == 0, i % 3 == 0, i == 7));
+                var coverage = new StoragePackets.Coverage("minecraft:overworld", zone);
+                commandWire.clear(); // The rejected command above left partial bytes.
+                StoragePackets.Coverage.CODEC.encode(commandWire, coverage);
+                check(coverage.equals(StoragePackets.Coverage.CODEC.decode(commandWire)) && !commandWire.isReadable(), "Coverage codec roundtrip failed");
+                zone.add(zone.get(0));
+                boolean oversized = false;
+                try { StoragePackets.Coverage.CODEC.encode(commandWire, new StoragePackets.Coverage("minecraft:overworld", zone)); }
+                catch (RuntimeException expected) { oversized = true; }
+                check(oversized, "Oversized coverage zone was encoded");
             } finally { commandWire.release(); }
             LogUtils.getLogger().info("STORAGE_PACKET_CHECKS_OK fragments={} max_bytes={} variants=129 locations=512 large_components=true long_counts=true wire_roundtrip=true", fragments, maxBytes);
         } catch (ReflectiveOperationException failure) { throw new IllegalStateException("Packet reflection harness failed", failure); }
         finally {
             StorageConfig.MAX_PACKET_BYTES.set(originalBudget);
+            level.setBlockAndUpdate(position.above(), Blocks.AIR.defaultBlockState());
             level.setBlockAndUpdate(position, Blocks.AIR.defaultBlockState());
         }
     }

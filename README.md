@@ -3,8 +3,14 @@
 Minecraft 1.21.1 · NeoForge 21.1.251 · Java 21.
 
 HomeLink Storage connecte, indexe, recherche, localise et surveille de vrais
-inventaires Minecraft. Le Controller et le Terminal permettent désormais de retirer
-les objets : chaque objet reçu est réellement extrait du coffre sélectionné.
+inventaires Minecraft. Chaque bloc a un rôle distinct :
+
+- **Terminal** : seul bloc qui affiche les objets et permet de les retirer ;
+- **Controller** : son écran gère le réseau (nom, inventaires, zones, oubli des
+  inventaires hors ligne, actualisation), sans liste d’objets ni retrait ;
+- **Link** (Connecteur) et **Repeater** : pas d’écran, un clic droit affiche leur état
+  et dessine pendant 30 s leur zone d’action (leur chunk) et celles du reste du réseau ;
+- **Deposit** : écran limité à ses 27 emplacements d’entrée.
 
 ## Installation et prise en main
 
@@ -12,7 +18,7 @@ Le [Storage Deposit](docs/STORAGE_DEPOSIT.md) ajoute un coffre d'entrée de 27 s
 une stack par seconde est rangée dans un inventaire connecté contenant déjà la même
 variante. Il se relie au Controller avec la clé USB de liaison existante.
 
-Installer `homelink_storage-1.0.0.jar` et `homecore-1.3.0.jar` dans le dossier
+Installer `homelink_storage-1.0.0.jar` et `homecore-1.6.1.jar` dans le dossier
 `mods` du client et du serveur NeoForge.
 
 1. Placer un Storage Controller.
@@ -25,8 +31,11 @@ Installer `homelink_storage-1.0.0.jar` et `homecore-1.3.0.jar` dans le dossier
 5. Ouvrir le Terminal normalement. Le bouton `?` affiche le manuel intégré.
 
 Le Controller peut se poser sur toute face d’un bloc. Son voyant clignote lorsque
-des inventaires sont connectés. Sélectionner un objet et son coffre, puis utiliser
-« Prendre 1 » ou « Prendre 64 » ; la permission HomeCore CONTROL est nécessaire.
+des inventaires sont connectés. Dans la grille du Terminal, double-clic ou Maj+clic retire une stack,
+clic droit une demi-stack, Ctrl+clic un objet et clic molette remplit l’inventaire ; le
+champ Quantité retire un nombre libre. Les objets viennent de n’importe quel coffre du
+réseau. La permission HomeCore CONTROL est nécessaire. JEI est pris en charge en option :
+R/U sur la grille, recherche synchronisée et récupération des ingrédients d’une recette.
 
 Le Terminal possède deux modèles : sur pied lorsqu’il est posé sur le dessus d’un
 bloc, et panneau mince lorsqu’il est fixé à un mur ou sous un bloc.
@@ -48,7 +57,7 @@ Installer un JDK 21, définir `JAVA_HOME`, puis utiliser le wrapper Gradle :
 
 ```powershell
 git clone https://github.com/LKDM7/HomeCore ../HomeCore
-git -C ../HomeCore checkout 0557f41f80b0a900990b11b85146e1937676a615
+git -C ../HomeCore checkout fa8d6854d8686195d760ca9e5988bbcf2c29c8bb
 .\gradlew.bat build
 .\gradlew.bat releaseBundle
 .\gradlew.bat runClient
@@ -56,7 +65,7 @@ git -C ../HomeCore checkout 0557f41f80b0a900990b11b85146e1937676a615
 
 L’emplacement de HomeCore est configurable avec
 `-Phomecore_dir=../autre-checkout`. Le composite Gradle compile la vraie API
-HomeCore 1.3.0 sans embarquer ses classes dans Storage. HomeLink Dashboard n’est pas
+HomeCore 1.6.1 sans embarquer ses classes dans Storage. HomeLink Dashboard n’est pas
 une dépendance : Storage reprend son langage visuel et expose ses données au Dashboard
 uniquement au travers de HomeCore.
 
@@ -65,6 +74,7 @@ uniquement au travers de HomeCore.
 ```powershell
 .\gradlew.bat runSmoke -PsmokeLanguage=fr_fr
 .\gradlew.bat runSmoke -PwithDashboard -PsmokeLanguage=fr_fr --no-configuration-cache
+.\gradlew.bat runSmoke -PwithJei -PsmokeLanguage=fr_fr
 .\gradlew.bat runPersistence -PpersistencePass=write
 .\gradlew.bat runPersistence -PpersistencePass=read
 ```

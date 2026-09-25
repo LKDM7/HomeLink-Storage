@@ -1,10 +1,12 @@
 package fr.lkdm.homelink.storage.client.screen;
 
+import fr.lkdm.homelink.storage.client.recipe.RecipeViewerBridge;
 import fr.lkdm.homelink.storage.client.rendering.StorageTheme;
 import fr.lkdm.homelink.storage.client.widget.StorageButton;
 import fr.lkdm.homelink.storage.client.widget.StorageManualView;
 import fr.lkdm.homelink.storage.menu.StorageMenu;
 import fr.lkdm.homelink.storage.network.StorageData;
+import fr.lkdm.homelink.storage.storage.inventory.StorageWithdrawal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -12,6 +14,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -31,7 +35,9 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
     private EditBox search;
     private EditBox name;
     private EditBox zoneName;
-    private boolean management;
+    /** Fixed by the opened block: Controller = management, Terminal = items. */
+    private final boolean management;
+    private EditBox controllerName;
     private boolean byCount;
     private boolean variants;
     private boolean dirty = true;
@@ -44,14 +50,21 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
     private StorageData.Location selectedLocation;
     private StorageManualView manual;
     private boolean manualOpen;
+    private EditBox quantity;
+    private int lastClickIndex = -1;
+    private long lastClickTime;
+
+    /** Grid item under the cursor with its screen area, for tooltips and recipe viewers. */
+    public record Hovered(ItemStack stack, int x, int y, int width, int height) {}
 
     public StorageScreen(StorageMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
+        management = menu.managesNetwork();
         imageWidth = 380;
         imageHeight = 220;
     }
 
-    private static Component text(String key, Object... args) {
+    private static net.minecraft.network.chat.MutableComponent text(String key, Object... args) {
         return Component.translatable("screen.homelink_storage." + key, args);
     }
 
@@ -87,6 +100,13 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
             return;
         }
         if (management) {
+            // Controller: network management only, no item list and no withdrawal.
+            String draftController = controllerName == null ? menu.clientName() : controllerName.getValue();
+            controllerName = input(new EditBox(font, leftPos + 10, topPos + 42, 278, 18, text("controller_name")));
+            controllerName.setMaxLength(64);
+            controllerName.setHint(text("controller_name"));
+            controllerName.setValue(draftController);
+            button("rename_controller", 292, 42, 76, () -> menu.send("rename_controller", "", controllerName.getValue()));
             String draftName = name == null ? selectedLocation == null ? "" : selectedLocation.name() : name.getValue();
             String draftZone = zoneName == null ? "" : zoneName.getValue();
             name = input(new EditBox(font, leftPos + 198, topPos + 74, 170, 18, text("name")));
@@ -105,43 +125,105 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
             zoneName.setMaxLength(48);
             zoneName.setHint(text("new_zone"));
             zoneName.setValue(draftZone);
-            button("create_zone", 198, 168, 82, () -> menu.send("create_zone", "", zoneName.getValue()));
-            button("rename_controller", 284, 168, 84, () -> menu.send("rename_controller", "", name.getValue()));
+            button("create_zone", 198, 168, 170, () -> menu.send("create_zone", "", zoneName.getValue()));
             button("forget_offline", 198, 194, 170, () -> {
                 if (selectedLocation != null) menu.send("forget_inventory", selectedLocation.linkId().toString(), "");
             });
+            button("refresh", 10, 194, 86, () -> menu.send("refresh", "", ""));
+            button("close", 102, 194, 88, this::onClose);
         } else {
-            search = input(new EditBox(font, leftPos + 10, topPos + 42, 276, 18, text("search")));
+            // Terminal: find and take items; configuration lives on the Controller.
+            boolean viewer = RecipeViewerBridge.available();
+            if (search == null && RecipeViewerBridge.synchronizedSearch()) query = RecipeViewerBridge.viewerSearch();
+            search = input(new EditBox(font, leftPos + 10, topPos + 42, viewer ? 336 : 358, 18, text("search")));
             search.setMaxLength(128);
             search.setHint(text("search"));
             search.setValue(query);
-            search.setResponder(value -> { dirty = true; scroll = 0; });
+            search.setResponder(value -> {
+                dirty = true; scroll = 0;
+                if (RecipeViewerBridge.synchronizedSearch()) RecipeViewerBridge.pushSearch(value);
+            });
+            if (viewer) {
+                var sync = (StorageButton) button("recipe_sync", 350, 42, 18, () -> {
+                    RecipeViewerBridge.setSynchronizedSearch(!RecipeViewerBridge.synchronizedSearch());
+                    if (RecipeViewerBridge.synchronizedSearch()) RecipeViewerBridge.pushSearch(search.getValue());
+                    rebuildWidgets();
+                });
+                sync.selected(RecipeViewerBridge.synchronizedSearch());
+                sync.setMessage(Component.literal("⇄"));
+                sync.setTooltip(Tooltip.create(text(RecipeViewerBridge.synchronizedSearch() ? "recipe_sync_on" : "recipe_sync_off")));
+            }
             ((StorageButton) button(byCount ? "sort_count" : "sort_name", 10, 64, 88, () -> { byCount = !byCount; dirty = true; rebuildWidgets(); })).selected(byCount);
             ((StorageButton) button(variants ? "variants" : "aggregate", 102, 64, 88, () -> { variants = !variants; dirty = true; rebuildWidgets(); })).selected(variants);
             var zoneButton = addRenderableWidget(StorageButton.builder(zone.isEmpty() ? text("all_zones") : Component.literal(zoneLabel(zone)), button -> {
                 zone = cycleZone(zone, true); dirty = true; scroll = 0; rebuildWidgets();
             }).bounds(leftPos + 194, topPos + 64, 174, 18).build());
             zoneButton.setTooltip(Tooltip.create(zoneButton.getMessage()));
-            button("locate", 138, 194, 80, () -> {
+            button("close", 10, 194, 80, this::onClose);
+            button("locate", 94, 194, 124, () -> {
                 if (selectedLocation != null) menu.send("locate", selectedLocation.linkId().toString(), "");
             });
-            button("take_one", 222, 194, 70, () -> withdraw(1));
-            button("take_stack", 296, 194, 72, () -> withdraw(64));
+            String draftQuantity = quantity == null ? "64" : quantity.getValue();
+            quantity = input(new EditBox(font, leftPos + 222, topPos + 194, 54, 18, text("quantity")));
+            quantity.setMaxLength(4);
+            quantity.setFilter(value -> value.chars().allMatch(Character::isDigit));
+            quantity.setValue(draftQuantity);
+            quantity.setTooltip(Tooltip.create(text("quantity_hint", StorageWithdrawal.MAX_REQUEST)));
+            button("take", 280, 194, 88, this::withdrawQuantity);
         }
-        ((StorageButton) button(management ? "browse" : "manage", 292, 42, 76, () -> { management = !management; dirty = true; rebuildWidgets(); })).selected(management);
-        button("refresh", 10, 194, management ? 86 : 60, () -> menu.send("refresh", "", ""));
-        button("close", management ? 102 : 74, 194, management ? 88 : 60, this::onClose);
         dirty = true;
     }
 
+    /**
+     * Requests the selected variant from any inventory of the network. The selected inventory,
+     * if any, is emptied first; the server bounds the amount by stock and free space.
+     */
     public void withdraw(int amount) {
-        if (selected == null || selectedLocation == null) return;
+        if (selected == null || amount < 1) return;
         if (selected.id() < 0) {
             variants = true; dirty = true; rebuildWidgets(); refreshRows();
             if (minecraft.player != null) minecraft.player.displayClientMessage(text("choose_variant"), true);
             return;
         }
-        menu.send("withdraw", selectedLocation.linkId().toString(), selected.id() + ":" + amount);
+        String preferred = selectedLocation == null ? "" : selectedLocation.linkId().toString();
+        menu.send("withdraw_any", preferred, selected.id() + ":" + Math.min(amount, StorageWithdrawal.MAX_REQUEST));
+    }
+
+    private void withdrawQuantity() {
+        if (quantity == null || quantity.getValue().isEmpty()) return;
+        withdraw((int) Math.min(Long.parseLong(quantity.getValue()), StorageWithdrawal.MAX_REQUEST));
+    }
+
+    private void select(View row) {
+        selected = row; selectedLocation = null; locationScroll = 0; refreshLocations();
+    }
+
+    /** Applies the grid mouse shortcuts to a row; returns the requested amount, or 0 for a plain selection. */
+    public int clickRow(int index, int button, boolean shift, boolean control, boolean doubleClick) {
+        if (index < 0 || index >= rows.size()) return 0;
+        View row = rows.get(index);
+        select(row);
+        int amount = clickAmount(button, shift, control, doubleClick, row.count(), row.stack().getMaxStackSize());
+        if (amount > 0) withdraw(amount);
+        return amount;
+    }
+
+    /** Grid shortcuts: Ctrl 1 item, Shift/double-click a stack, right-click half a stack, middle-click everything. */
+    public static int clickAmount(int button, boolean shift, boolean control, boolean doubleClick, long available, int maxStack) {
+        if (button == 0 && control) return 1;
+        if (button == 0 && (shift || doubleClick)) return maxStack;
+        if (button == 1) return (int) Math.max(1, (Math.min(available, maxStack) + 1) / 2);
+        if (button == 2) return StorageWithdrawal.MAX_REQUEST;
+        return 0;
+    }
+
+    public Hovered hovered(double mouseX, double mouseY) {
+        if (manualOpen || management || mouseX < leftPos + 10 || mouseX >= leftPos + 190
+                || mouseY < topPos + 85 || mouseY >= topPos + 187) return null;
+        int line = (int) (mouseY - topPos - 85) / 17;
+        int index = scroll + line;
+        if (line >= 6 || index >= rows.size()) return null;
+        return new Hovered(rows.get(index).stack(), leftPos + 12, topPos + 85 + line * 17, 16, 16);
     }
 
     private String cycleZone(String current, boolean includeAll) {
@@ -182,6 +264,9 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
 
     @Override protected void containerTick() {
         refreshRows();
+        // The name arrives with the first snapshot, after the screen opened.
+        if (controllerName != null && !controllerName.isFocused() && controllerName.getValue().isEmpty() && !menu.clientName().isEmpty())
+            controllerName.setValue(menu.clientName());
     }
 
     private void refreshRows() {
@@ -193,6 +278,8 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
         for (StorageData.Location location : menu.clientLocations()) byPosition.putIfAbsent(location.position(), location);
         String query = search == null ? "" : search.getValue().trim().toLowerCase(Locale.ROOT);
         Map<String, View> aggregate = new LinkedHashMap<>();
+        // Aggregated rows withdraw the plain variant when one exists; other mixes need an explicit variant.
+        Map<String, Long> plainVariant = new HashMap<>();
         for (StorageData.Row row : menu.clientRows()) {
             ItemStack stack = row.stack();
             String registry = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
@@ -209,6 +296,7 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
             if (count == 0) continue;
             if (variants) rows.add(new View(row.id(), stack, count, filteredLocations));
             else {
+                if (stack.isComponentsPatchEmpty()) plainVariant.put(registry, row.id());
                 View old = aggregate.get(registry);
                 if (old == null) aggregate.put(registry, new View(row.id(), stack, count, filteredLocations));
                 else {
@@ -217,7 +305,8 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
                 }
             }
         }
-        if (!variants) rows.addAll(aggregate.values());
+        if (!variants) aggregate.forEach((registry, view) -> rows.add(view.id() >= 0 ? view
+                : new View(plainVariant.getOrDefault(registry, -1L), view.stack(), view.count(), view.locations())));
         Comparator<View> order = Comparator.comparing(view -> view.stack().getHoverName().getString(), String.CASE_INSENSITIVE_ORDER);
         if (byCount) order = Comparator.comparingLong(View::count).reversed().thenComparing(order);
         rows.sort(order);
@@ -314,23 +403,31 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
 
     @Override public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
-        if (!manualOpen && !management && mouseX >= leftPos + 10 && mouseX < leftPos + 190
-                && mouseY >= topPos + 85 && mouseY < topPos + 187) {
-            int index = scroll + (mouseY - topPos - 85) / 17;
-            if (index < rows.size()) graphics.renderTooltip(font, rows.get(index).stack(), mouseX, mouseY);
+        Hovered hovered = hovered(mouseX, mouseY);
+        if (hovered != null) {
+            List<Component> lines = new ArrayList<>(getTooltipFromContainerItem(hovered.stack()));
+            lines.add(text("click_hint").withStyle(ChatFormatting.DARK_GRAY));
+            lines.add(text("click_hint_more").withStyle(ChatFormatting.DARK_GRAY));
+            graphics.renderTooltip(font, lines, hovered.stack().getTooltipImage(), mouseX, mouseY);
         }
     }
 
     @Override public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (manualOpen) return super.mouseClicked(mouseX, mouseY, button);
-        if (button == 0) {
-            int x = (int) mouseX - leftPos;
-            int y = (int) mouseY - topPos;
-            if (!management && x >= 10 && x < 190 && y >= 85 && y < 187) {
-                int index = scroll + (y - 85) / 17;
-                if (index < rows.size()) { selected = rows.get(index); selectedLocation = null; locationScroll = 0; refreshLocations(); }
-                return true;
+        int x = (int) mouseX - leftPos;
+        int y = (int) mouseY - topPos;
+        if (!management && x >= 10 && x < 190 && y >= 85 && y < 187) {
+            int index = scroll + (y - 85) / 17;
+            if (index < rows.size() && button <= 2) {
+                long now = Util.getMillis();
+                boolean doubleClick = button == 0 && index == lastClickIndex && now - lastClickTime < 250;
+                lastClickIndex = button == 0 && !doubleClick ? index : -1;
+                lastClickTime = now;
+                clickRow(index, button, hasShiftDown(), hasControlDown(), doubleClick);
             }
+            return true;
+        }
+        if (button == 0) {
             int locationX = management ? 10 : 198;
             int locationY = management ? 86 : 119;
             int height = management ? 17 : 23;
@@ -363,6 +460,10 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
             if (keyCode == 256) { toggleManual(); return true; }
             if (manual.keyPressed(keyCode)) return true;
             return super.keyPressed(keyCode, scanCode, modifiers);
+        }
+        if (quantity != null && getFocused() == quantity && quantity.isFocused() && (keyCode == 257 || keyCode == 335)) {
+            withdrawQuantity();
+            return true;
         }
         if (getFocused() instanceof EditBox edit && edit.isFocused() && keyCode != 256) return edit.keyPressed(keyCode, scanCode, modifiers);
         return super.keyPressed(keyCode, scanCode, modifiers);
