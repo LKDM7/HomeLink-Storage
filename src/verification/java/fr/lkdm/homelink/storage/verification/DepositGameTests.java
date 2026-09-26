@@ -1,6 +1,7 @@
 package fr.lkdm.homelink.storage.verification;
 
 import com.mojang.authlib.GameProfile;
+import fr.lkdm.homelink.storage.block.StorageBlock;
 import fr.lkdm.homelink.storage.blockentity.DepositBlockEntity;
 import fr.lkdm.homelink.storage.blockentity.StorageBlockEntity;
 import fr.lkdm.homelink.storage.registry.StorageRegistries;
@@ -215,6 +216,26 @@ public final class DepositGameTests {
                 f.level.setChunkForced(f.base.getX() >> 4, f.base.getZ() >> 4, false);
             }
         });
+    }
+
+    /** Automation reaches the Deposit through its top, back and sides; front and bottom stay closed, in every orientation. */
+    @GameTest(template = "empty", timeoutTicks = 100)
+    public static void depositClosedOnlyAtFrontAndBottom(GameTestHelper helper) {
+        Fixture f = new Fixture(helper, new BlockPos(768, 80, 768));
+        try {
+            BlockPos pos = f.deposit.getBlockPos();
+            for (Direction front : Direction.Plane.HORIZONTAL) {
+                f.level.setBlockAndUpdate(pos, f.level.getBlockState(pos).setValue(StorageBlock.TARGET, front));
+                for (Direction side : Direction.values()) {
+                    boolean open = side != Direction.DOWN && side != front;
+                    boolean exposed = f.level.getCapability(Capabilities.ItemHandler.BLOCK, pos, side) != null;
+                    check(helper, exposed == open, "Deposit facing " + front + ": face " + side + (open ? " closed" : " open"));
+                }
+                check(helper, f.level.getCapability(Capabilities.ItemHandler.BLOCK, pos, null) != null,
+                        "Deposit neutral access lost");
+            }
+            helper.succeed();
+        } finally { f.clear(); }
     }
 
     @GameTest(template = "empty", timeoutTicks = 850)

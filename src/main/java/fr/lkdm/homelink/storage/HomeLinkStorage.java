@@ -16,7 +16,7 @@ public final class HomeLinkStorage {
         StorageRegistries.register(bus);
         bus.addListener((net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent event) -> {
             event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK,
-                    StorageRegistries.DEPOSIT_ENTITY.get(), (entity, side) -> entity.inventory());
+                    StorageRegistries.DEPOSIT_ENTITY.get(), (entity, side) -> depositOpen(entity, side) ? entity.inventory() : null);
             // Hoppers and Links see the overflow chest as an ordinary inventory.
             event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK,
                     StorageRegistries.OVERFLOW_ENTITY.get(), (entity, side) -> entity.inventory());
@@ -24,5 +24,18 @@ public final class HomeLinkStorage {
         container.registerConfig(ModConfig.Type.SERVER, StorageConfig.SPEC);
         // Resolve the actual API at runtime, in addition to the mandatory loader dependency.
         DashboardAPI.providers();
+    }
+
+    /**
+     * Hoppers and pipes reach the Deposit through its top, back and side ports; the front (screen)
+     * and the bottom stay closed. A null side is the neutral access.
+     */
+    public static boolean depositOpen(fr.lkdm.homelink.storage.blockentity.DepositBlockEntity deposit,
+            @org.jetbrains.annotations.Nullable net.minecraft.core.Direction side) {
+        if (side == null || side == net.minecraft.core.Direction.UP) return true;
+        if (side == net.minecraft.core.Direction.DOWN) return false;
+        var state = deposit.getBlockState();
+        return state.hasProperty(fr.lkdm.homelink.storage.block.StorageBlock.TARGET)
+                && side != state.getValue(fr.lkdm.homelink.storage.block.StorageBlock.TARGET);
     }
 }

@@ -10,8 +10,9 @@ connectés qui contiennent déjà ces objets.
    Storage Controller, puis sur le Deposit. Aucun nouveau connecteur n'est nécessaire.
 3. Ouvrir le Deposit et y déplacer les objets normalement ou par shift-click.
 
-Son inventaire possède 27 emplacements. Les hoppers peuvent y insérer ou en retirer
-des objets par la capacité NeoForge standard. Le comparateur mesure le remplissage
+Son inventaire possède 27 emplacements. Les hoppers et tuyaux y accèdent par le
+**dessus** et par les **ports** de l'arrière et des deux côtés, via la capacité NeoForge
+standard ; l'avant (écran) et le dessous restent fermés. Le comparateur mesure le remplissage
 comme un coffre : 0 vide, jusqu'à 15 plein. Casser le bloc libère son contenu.
 
 Une tentative traite au maximum un emplacement non vide toutes les 20 ticks côté
@@ -142,7 +143,7 @@ de toutes les capacités des mods tiers.
 | 9–10 : Controller détruit / disponible | Arrêt, conservation, reprise après restauration du même UUID |
 | 11 : destination détruite | Index périmé et suppression pendant la simulation |
 | 12 : chunks déchargés | Vrai déchargement/rechargement de destination et Controller ; aucun chargement par Deposit |
-| 13 : hopper | Transfert réel du hopper vanilla vers la capacité du Deposit |
+| 13 : hopper | Transfert réel du hopper vanilla vers la capacité du Deposit ; avant et dessous fermés, autres faces ouvertes, dans les 4 orientations |
 | 14 : shift-click | Appel serveur et vrai paquet émis par le client |
 | 15 : redémarrage | Sauvegarde puis lecture par un autre processus Minecraft |
 | 16 : plusieurs Deposits | Comptage conservé vers un même Controller |
