@@ -9,7 +9,7 @@
   "key": {
     "C": { "item": "minecraft:copper_ingot" },
     "R": { "item": "minecraft:redstone" },
-    "B": { "item": "homecore:homelink_circuit_board" },
+    "B": { "item": "homecore:homelink_communication_module" },
     "I": { "item": "minecraft:iron_ingot" }
   },
   "result": { "id": "homelink_storage:storage_link", "count": 4 }

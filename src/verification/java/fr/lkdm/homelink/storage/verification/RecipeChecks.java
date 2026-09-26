@@ -23,11 +23,12 @@ public final class RecipeChecks {
     public static void run(ServerPlayer player) {
         Item iron = Items.IRON_INGOT, copper = Items.COPPER_INGOT, redstone = Items.REDSTONE;
         Item board = fr.lkdm.homecore.registry.HomeCoreItems.HOMELINK_CIRCUIT_BOARD.get(), chip = fr.lkdm.homecore.registry.HomeCoreItems.HOMELINK_MICROPROCESSOR.get();
+        Item comms = fr.lkdm.homecore.registry.HomeCoreItems.HOMELINK_COMMUNICATION_MODULE.get(), control = fr.lkdm.homecore.registry.HomeCoreItems.HOMELINK_CONTROL_MODULE.get();
         recipe(player, "storage_controller", List.of(iron, copper, iron, redstone, chip, redstone, iron, copper, iron), StorageRegistries.CONTROLLER.get().asItem(), 1);
         recipe(player, "storage_terminal", List.of(iron, Items.GLASS, iron, redstone, board, redstone, iron, copper, iron), StorageRegistries.TERMINAL.get().asItem(), 1);
-        recipe(player, "storage_link", List.of(Items.AIR, copper, Items.AIR, redstone, board, redstone, Items.AIR, iron, Items.AIR), StorageRegistries.LINK.get().asItem(), 4);
-        recipe(player, "storage_repeater", List.of(Items.AIR, board, Items.AIR, redstone, Items.REPEATER, redstone, iron, iron, iron), StorageRegistries.REPEATER.get().asItem(), 1);
-        recipe(player, "storage_deposit", List.of(Items.AIR, Items.CHEST, Items.AIR, redstone, Items.HOPPER, redstone, Items.AIR, board, Items.AIR), StorageRegistries.DEPOSIT.get().asItem(), 1);
+        recipe(player, "storage_link", List.of(Items.AIR, copper, Items.AIR, redstone, comms, redstone, Items.AIR, iron, Items.AIR), StorageRegistries.LINK.get().asItem(), 4);
+        recipe(player, "storage_repeater", List.of(Items.AIR, comms, Items.AIR, redstone, Items.REPEATER, redstone, iron, iron, iron), StorageRegistries.REPEATER.get().asItem(), 1);
+        recipe(player, "storage_deposit", List.of(Items.AIR, Items.CHEST, Items.AIR, redstone, Items.HOPPER, redstone, Items.AIR, control, Items.AIR), StorageRegistries.DEPOSIT.get().asItem(), 1);
         recipe(player, "storage_overflow", List.of(Items.AIR, board, Items.AIR, Items.CHEST, chip, Items.CHEST, iron, iron, iron), StorageRegistries.OVERFLOW.get().asItem(), 1);
         gestures(player);
         LogUtils.getLogger().info("STORAGE_RECIPE_CHECKS_OK recipes=6 matches=true results=true binding_gesture=true unauthorized_binding_denied=true");

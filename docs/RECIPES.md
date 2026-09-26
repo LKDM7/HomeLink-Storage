@@ -4,16 +4,28 @@ Toutes les recettes se font sur une table de fabrication 3 × 3. Elles apparaiss
 le livre après l’obtention de cuivre ou de redstone.
 
 Comme HomeLink Farm, les appareils utilisent les composants électroniques partagés de
-HomeCore 1.6.1 :
+HomeCore 1.7.0 :
 
 - **Carte électronique HomeLink** / HomeLink Circuit Board (`homecore:homelink_circuit_board`) :
   4 cuivre + 4 redstone + 1 quartz → 2 cartes ;
 - **Microprocesseur HomeLink** / HomeLink Microprocessor (`homecore:homelink_microprocessor`) :
-  1 carte + 4 pépites d’or + 2 cuivre + 1 redstone + 1 quartz → 1 microprocesseur.
+  1 carte + 4 pépites d’or + 2 cuivre + 1 redstone + 1 quartz → 1 microprocesseur ;
+- **Module de communication HomeLink** / HomeLink Communication Module
+  (`homecore:homelink_communication_module`) : 1 carte + 1 microprocesseur + 2 cuivre +
+  2 redstone + 1 quartz + 1 éclat d’améthyste → 1 module ;
+- **Module de contrôle HomeLink** / HomeLink Control Module
+  (`homecore:homelink_control_module`) : 1 carte + 1 microprocesseur + 1 comparateur +
+  2 cuivre + 2 redstone + 1 lingot de fer → 1 module.
 
-Ces deux composants s’assemblent uniquement à l’**Electronics Workbench** de HomeCore.
-Le Controller, qui gère le réseau, demande un microprocesseur. Le Terminal, le Link, le
-Repeater et le Deposit demandent une carte. La clé USB reste un simple outil vanilla.
+Ces composants s’assemblent uniquement à l’**Electronics Workbench** de HomeCore.
+Chaque appareil prend le composant qui correspond à son rôle :
+
+- le Controller, qui gère le réseau, demande un microprocesseur ;
+- le Link et le Repeater, qui relient les inventaires et relaient le réseau, demandent
+  un module de communication ;
+- le Deposit, qui range les objets tout seul, demande un module de contrôle ;
+- le Terminal demande une carte, le coffre de débordement une carte et un microprocesseur ;
+- la clé USB reste un simple outil vanilla.
 
 ## Storage Controller — 1
 
@@ -52,7 +64,7 @@ R B R
 
 - C : lingot de cuivre / copper ingot × 1
 - R : poudre de redstone / redstone dust × 2
-- B : carte électronique HomeLink / HomeLink circuit board × 1
+- B : module de communication HomeLink / HomeLink communication module × 1
 - I : lingot de fer / iron ingot × 1
 
 ## Storage Repeater — 1
@@ -63,7 +75,7 @@ R Q R
 I I I
 ```
 
-- B : carte électronique HomeLink / HomeLink circuit board × 1
+- B : module de communication HomeLink / HomeLink communication module × 1
 - R : poudre de redstone / redstone dust × 2
 - Q : répéteur de redstone / redstone repeater × 1
 - I : lingot de fer / iron ingot × 3
@@ -79,7 +91,7 @@ R H R
 - C : coffre / chest × 1
 - R : poudre de redstone / redstone dust × 2
 - H : entonnoir / hopper × 1
-- B : carte électronique HomeLink / HomeLink circuit board × 1
+- B : module de contrôle HomeLink / HomeLink control module × 1
 
 ## Coffre de débordement / Storage Overflow Chest — 1
 

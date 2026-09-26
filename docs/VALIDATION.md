@@ -139,6 +139,15 @@ Assertions ajoutées :
 Non couvert automatiquement : le clic réel sur le bouton **+** dans l'interface JEI (la
 planification et la commande serveur sont testées séparément), R/U sur la grille et EMI.
 
+## HomeCore 1.7.0 et modules — 26 septembre 2026
+
+Storage cible HomeCore 1.7.0 (`fecc72b`, plage `[1.7.0,2.0.0)`). Le Link et le Repeater
+prennent le module de communication, le Deposit le module de contrôle. Le Controller,
+le Terminal, le coffre de débordement et la clé USB ne changent pas.
+
+- `build runSmoke -PsmokeLanguage=fr_fr` : succès, `STORAGE_RECIPE_CHECKS_OK` avec les
+  nouvelles grilles et les vrais items HomeCore 1.7.0.
+
 ## HomeCore 1.6.1 et recettes à composants — 25 septembre 2026
 
 Storage cible maintenant HomeCore 1.6.1 (`fa8d685`, plage `[1.6.1,2.0.0)`), compilé

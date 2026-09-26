@@ -60,8 +60,11 @@ Un son discret accompagne les transferts. Il n'y a aucun filtre ni règle config
 ```text
        Coffre
 Redstone Hopper Redstone
-       Lingot de cuivre
+       Module de contrôle HomeLink
 ```
+
+Le module de contrôle (`homecore:homelink_control_module`) s'assemble à l'Electronics
+Workbench de HomeCore 1.7.0.
 
 Résultat : un Storage Deposit. Le caisson possède un bac supérieur encastré, une
 façade cyan, des bordures en cuivre et des aérations. Les textures de matériaux

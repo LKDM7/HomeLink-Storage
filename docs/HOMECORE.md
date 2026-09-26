@@ -2,6 +2,13 @@
 
 Source de vérité : https://github.com/LKDM7/HomeCore
 
+Mise à jour du 26 septembre 2026 : Storage cible **HomeCore 1.7.0**, commit
+`fecc72b70cbe31d8a4b667f70ff866e400925385` de `main`. La plage déclarée est
+`[1.7.0,2.0.0)`. L'API publique ne change pas. La version 1.7.0 ajoute
+`homecore:homelink_communication_module` et `homecore:homelink_control_module`. Le Link
+et le Repeater prennent désormais le module de communication, le Deposit le module de
+contrôle (voir [RECIPES.md](RECIPES.md)).
+
 Mise à jour du 25 septembre 2026 : Storage cible **HomeCore 1.6.1**, commit
 `fa8d6854d8686195d760ca9e5988bbcf2c29c8bb` de `main` (déjà poussé sur `origin`). La plage
 déclarée est `[1.6.1,2.0.0)`. L'API publique `fr.lkdm.homecore.api.*` n'a pas changé depuis

@@ -20,7 +20,7 @@ Le [Storage Deposit](docs/STORAGE_DEPOSIT.md) ajoute un coffre d'entrée de 27 s
 une stack par seconde est rangée dans un inventaire connecté contenant déjà la même
 variante. Il se relie au Controller avec la clé USB de liaison existante.
 
-Installer `homelink_storage-1.0.0.jar` et `homecore-1.6.1.jar` dans le dossier
+Installer `homelink_storage-1.0.0.jar` et `homecore-1.7.0.jar` dans le dossier
 `mods` du client et du serveur NeoForge.
 
 1. Placer un Storage Controller.
@@ -59,7 +59,7 @@ Installer un JDK 21, définir `JAVA_HOME`, puis utiliser le wrapper Gradle :
 
 ```powershell
 git clone https://github.com/LKDM7/HomeCore ../HomeCore
-git -C ../HomeCore checkout fa8d6854d8686195d760ca9e5988bbcf2c29c8bb
+git -C ../HomeCore checkout fecc72b70cbe31d8a4b667f70ff866e400925385
 .\gradlew.bat build
 .\gradlew.bat releaseBundle
 .\gradlew.bat runClient
@@ -67,7 +67,7 @@ git -C ../HomeCore checkout fa8d6854d8686195d760ca9e5988bbcf2c29c8bb
 
 L’emplacement de HomeCore est configurable avec
 `-Phomecore_dir=../autre-checkout`. Le composite Gradle compile la vraie API
-HomeCore 1.6.1 sans embarquer ses classes dans Storage. HomeLink Dashboard n’est pas
+HomeCore 1.7.0 sans embarquer ses classes dans Storage. HomeLink Dashboard n’est pas
 une dépendance : Storage reprend son langage visuel et expose ses données au Dashboard
 uniquement au travers de HomeCore.
 
