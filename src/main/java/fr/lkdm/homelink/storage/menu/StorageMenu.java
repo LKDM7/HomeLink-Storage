@@ -68,6 +68,8 @@ public final class StorageMenu extends AbstractContainerMenu {
     /** Objects waiting in the Deposits of the network (Terminal only). */
     public List<StorageData.Pending> clientPending() { return pending; }
     public StorageData.Stats clientStats() { return stats; }
+    /** Whether the Controller has HomeLink Energy (a connected but unpowered network is frozen). */
+    public boolean clientPowered() { return clientPowered; }
     public long clientRevision() { return clientRevision; }
     public void send(String action, String target, String value) { PacketDistributor.sendToServer(new StoragePackets.Command(containerId, action, target, value)); }
     public StorageBlockEntity controller() { return source == null ? null : source.controller(); }
@@ -92,10 +94,13 @@ public final class StorageMenu extends AbstractContainerMenu {
         long revision = controller == null ? 0 : controller.index().revision();
         long metadata = controller == null ? 0 : controller.metadataRevision();
         long pending = controller == null ? 0 : controller.pendingRevision();
-        if (!first && sentIndex == revision && sentMetadata == metadata && sentPendingRevision == pending) return;
+        boolean powered = controller != null && controller.powered();
+        if (!first && sentIndex == revision && sentMetadata == metadata && sentPendingRevision == pending && sentPowered == powered) return;
+        sentPowered = powered;
         boolean reset = first;
         CompoundTag packet = new CompoundTag(); packet.putBoolean("Reset", first); first = false;
         packet.putBoolean("Connected", controller != null);
+        packet.putBoolean("Powered", powered);
         CompoundTag zoneTag = new CompoundTag();
         if (controller != null) {
             packet.putString("Name", controller.logicalName());
@@ -154,6 +159,8 @@ public final class StorageMenu extends AbstractContainerMenu {
     private static final int MAX_PENDING = 64;
     private List<PendingEntry> pendingSnapshot = List.of();
     private long sentPendingRevision = -1;
+    private boolean sentPowered;
+    private boolean clientPowered = true;
 
     public static List<PendingEntry> pendingEntries(StorageBlockEntity controller) {
         List<ItemStack> prototypes = new ArrayList<>();
@@ -262,6 +269,7 @@ public final class StorageMenu extends AbstractContainerMenu {
         }
         if (data.getBoolean("Header")) {
             clientName = data.getString("Name");
+            clientPowered = data.getBoolean("Powered");
             stats = new StorageData.Stats(data.getLong("Items"), data.getInt("Unique"), data.getInt("Inventories"), data.getInt("Occupied"), data.getInt("Slots"), data.getInt("Full"), data.getBoolean("Connected"));
             if (data.getBoolean("LocationsReset")) locations.clear();
             zones.clear();
@@ -284,6 +292,11 @@ public final class StorageMenu extends AbstractContainerMenu {
         lastCommand = time;
         StorageBlockEntity controller = controller();
         if (!stillValid(player) || controller == null || !controller.canAccess(player)) return;
+        // A network without HomeLink Energy is frozen: nothing can be located, withdrawn or reorganised.
+        if (!controller.powered()) {
+            player.displayClientMessage(Component.translatable("message.homelink_storage.no_power"), true);
+            return;
+        }
         if (!allowed(action, managesNetwork())) return;
         var permission = action.equals("locate") ? fr.lkdm.homecore.api.security.Permission.VIEW
                 : action.equals("refresh") || action.startsWith("withdraw") ? fr.lkdm.homecore.api.security.Permission.CONTROL : fr.lkdm.homecore.api.security.Permission.CONFIGURE;

@@ -10,7 +10,7 @@ import net.minecraft.world.entity.player.Inventory;
 
 /** The Controller's graphite instrument frame, with an ordinary chest inventory. */
 public final class DepositScreen extends AbstractContainerScreen<DepositMenu> {
-    private static final String[] STATES = { "not_connected", "controller_offline", "idle", "sorting", "blocked" };
+    private static final String[] STATES = { "not_connected", "controller_offline", "idle", "sorting", "blocked", "no_power" };
     public DepositScreen(DepositMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         imageWidth = 300;
@@ -34,7 +34,7 @@ public final class DepositScreen extends AbstractContainerScreen<DepositMenu> {
         return switch (state()) {
             case 2, 3 -> StorageTheme.ONLINE;
             case 4 -> StorageTheme.WARNING;
-            case 1 -> StorageTheme.OFFLINE;
+            case 1, 5 -> StorageTheme.OFFLINE;
             default -> StorageTheme.MUTED;
         };
     }

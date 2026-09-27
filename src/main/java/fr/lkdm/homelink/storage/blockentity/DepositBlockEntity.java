@@ -14,7 +14,7 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 
 /** Uses the same persistent identity, owner, binding and permissions as other Storage devices. */
 public final class DepositBlockEntity extends StorageBlockEntity {
-    public enum Status { NOT_CONNECTED, CONTROLLER_OFFLINE, IDLE, SORTING, BLOCKED }
+    public enum Status { NOT_CONNECTED, CONTROLLER_OFFLINE, IDLE, SORTING, BLOCKED, NO_POWER }
     private Status status = Status.NOT_CONNECTED;
     private int ticks;
     private int nextSlot;
@@ -38,6 +38,10 @@ public final class DepositBlockEntity extends StorageBlockEntity {
     };
 
     public DepositBlockEntity(BlockPos pos, BlockState state) { super(StorageRegistries.DEPOSIT_ENTITY.get(), pos, state); }
+    /** A connected Deposit sorts on HomeLink Energy of its own, whatever powers its Controller. */
+    @Override protected long energyPerMinute() {
+        return fr.lkdm.homelink.storage.config.StorageConfig.SPEC.isLoaded() ? fr.lkdm.homelink.storage.config.StorageConfig.DEPOSIT_ENERGY.get() : 0;
+    }
     public ItemStackHandler inventory() { return inventory; }
     public Status status() { return status; }
     @Override public boolean canAccess(net.minecraft.server.level.ServerPlayer player) {
@@ -53,9 +57,11 @@ public final class DepositBlockEntity extends StorageBlockEntity {
     public static void tick(Level level, BlockPos pos, BlockState state, DepositBlockEntity deposit) {
         if (level.isClientSide) return;
         deposit.age++;
+        boolean energized = deposit.controllerPos() == null || deposit.drawEnergy(level);
         if (++deposit.ticks < 20) return;
         deposit.ticks = 0;
         if (deposit.controllerPos() == null) { deposit.status = Status.NOT_CONNECTED; return; }
+        if (!energized) { deposit.status = Status.NO_POWER; return; }
         var controller = deposit.controller();
         // Waiting objects stay visible from Terminals even while sorting is suspended.
         if (controller != null) controller.reportDeposit(pos);

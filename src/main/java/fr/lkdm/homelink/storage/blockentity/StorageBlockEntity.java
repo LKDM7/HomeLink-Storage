@@ -42,6 +42,9 @@ import net.minecraft.world.level.block.state.BlockState;
 
 /** Server-owned identity, chunk coverage graph, scheduled index and HomeCore lifecycle. */
 public class StorageBlockEntity extends BlockEntity implements MenuProvider {
+    /** HomeLink Energy received through the HomeCore energy capability; only powered devices work. */
+    private final fr.lkdm.homecore.api.energy.EnergyBuffer energy = new fr.lkdm.homecore.api.energy.EnergyBuffer(() -> energyPerMinute() * 2, this::setChanged);
+    private boolean powered;
     private record Discovery(CoverageNode source, StorageInventoryAdapter adapter) { }
     private record LegacyMetadata(String name, String zone) { }
 
@@ -105,6 +108,25 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
         return node != null && node.status == StorageInventoryAdapter.Status.ONLINE;
     }
     public boolean discoveryTruncated() { return discoveryTruncated; }
+
+    /**
+     * HE per minute this device needs while it works: the Controller pays for its whole network
+     * (Terminals, Links, Repeaters) plus a share per connected inventory. Zero means no energy port.
+     */
+    protected long energyPerMinute() {
+        if (!isController() || !StorageConfig.SPEC.isLoaded()) return 0;
+        return StorageConfig.CONTROLLER_ENERGY.get() + (long) StorageConfig.INVENTORY_ENERGY.get() * connections.size();
+    }
+    /** Energy port exposed on every face, or null when this device needs no energy. */
+    public fr.lkdm.homecore.api.energy.EnergyBuffer energyPort() { return energyPerMinute() > 0 ? energy : null; }
+    /** Whether the last working tick found enough HE. */
+    public boolean powered() { return powered || energyPerMinute() <= 0; }
+    /** Pays this tick's share of the running cost; the device does nothing on a tick that returns false. */
+    protected boolean drawEnergy(Level level) {
+        boolean now = energy.draw(energyPerMinute(), 1200, level.getGameTime());
+        if (now != powered) { powered = now; setChanged(); }
+        return now;
+    }
 
     public void setOwner(UUID owner) { this.owner = owner; setChanged(); }
     public void setAlertLatches(boolean warning, boolean full) {
@@ -277,6 +299,8 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
     public static void tick(Level level, BlockPos pos, BlockState state, StorageBlockEntity entity) {
         if (!entity.isController()) return;
         entity.ensureHomeCore();
+        // Without HE the whole network stops: no scans, no automation, no withdrawals.
+        if (!entity.drawEnergy(level)) return;
         int verification = StorageConfig.VERIFY_INTERVAL.get();
         int rescan = StorageConfig.RESCAN_INTERVAL.get();
         if (entity.coverageDirty || level.getGameTime() % verification == Math.floorMod(pos.asLong(), verification)) entity.verifyCoverage();
@@ -522,6 +546,7 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public boolean automationAvailable() {
+        if (!powered()) return false;
         if (registrationFailed || !isController() || isRemoved() || !(level instanceof ServerLevel server)
                 || !server.hasChunkAt(worldPosition) || server.getBlockEntity(worldPosition) != this) return false;
         if (networkId == null) return true;
@@ -597,6 +622,8 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
     @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putInt("StorageFormat", 2);
+        energy.save(tag, "Energy");
+        tag.putBoolean("Powered", powered);
         tag.putUUID("Id", id);
         tag.putString("Name", logicalName);
         tag.putBoolean("WarningLatched", warningLatched);
@@ -637,6 +664,8 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
     @Override protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         if (tag.hasUUID("Id")) id = tag.getUUID("Id");
+        energy.load(tag, "Energy");
+        powered = tag.getBoolean("Powered");
         logicalName = savedName(tag.getString("Name"));
         warningLatched = tag.getBoolean("WarningLatched");
         fullLatched = tag.getBoolean("FullLatched");

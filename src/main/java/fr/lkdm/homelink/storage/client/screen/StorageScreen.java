@@ -420,12 +420,12 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
         graphics.drawString(font, font.plainSubstrByWidth(heading, imageWidth - 74), 14, 11, StorageTheme.TEXT, false);
         var stats = menu.clientStats();
         graphics.fill(imageWidth - 50, 11, imageWidth - 42, 19, 0xFF1D1F20);
-        graphics.fill(imageWidth - 48, 13, imageWidth - 44, 17, stats.connected() ? StorageTheme.ONLINE : StorageTheme.OFFLINE);
+        graphics.fill(imageWidth - 48, 13, imageWidth - 44, 17, stats.connected() && menu.clientPowered() ? StorageTheme.ONLINE : StorageTheme.OFFLINE);
         if (manualOpen) {
             graphics.drawString(font, Component.translatable("manual.homelink_storage.title"), 10, 32, StorageTheme.ACCENT, false);
             return;
         }
-        Component summary = stats.connected() ? text("stats", stats.items(), stats.unique(), stats.inventories(),
+        Component summary = stats.connected() && !menu.clientPowered() ? text("no_power") : stats.connected() ? text("stats", stats.items(), stats.unique(), stats.inventories(),
                 stats.slots() == 0 ? 0 : (int) (100L * stats.occupied() / stats.slots())) : text("disconnected");
         long waiting = management ? 0 : pendingTotal();
         String badge = waiting > 0 ? text("pending_badge", waiting).getString() : "";

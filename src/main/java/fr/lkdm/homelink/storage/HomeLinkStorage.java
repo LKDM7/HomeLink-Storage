@@ -20,6 +20,9 @@ public final class HomeLinkStorage {
             // Hoppers and Links see the overflow chest as an ordinary inventory.
             event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK,
                     StorageRegistries.OVERFLOW_ENTITY.get(), (entity, side) -> entity.inventory());
+            // HomeLink Energy: the Controller powers its network, a Deposit powers its own sorting.
+            event.registerBlockEntity(fr.lkdm.homecore.api.energy.EnergyApi.BLOCK, StorageRegistries.STORAGE_ENTITY.get(), (entity, side) -> entity.energyPort());
+            event.registerBlockEntity(fr.lkdm.homecore.api.energy.EnergyApi.BLOCK, StorageRegistries.DEPOSIT_ENTITY.get(), (entity, side) -> entity.energyPort());
         });
         container.registerConfig(ModConfig.Type.SERVER, StorageConfig.SPEC);
         // Resolve the actual API at runtime, in addition to the mandatory loader dependency.

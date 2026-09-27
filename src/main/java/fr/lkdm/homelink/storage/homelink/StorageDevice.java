@@ -106,6 +106,7 @@ public final class StorageDevice implements DashboardDevice {
 
     @Override public DeviceStatus status() {
         if (!isValid()) return DeviceStatus.OFFLINE;
+        if (!entity.powered()) return DeviceStatus.WARNING.withMessage(label("status", "no_power"));
         if (entity.discoveryTruncated()) return DeviceStatus.WARNING.withMessage(label("status", "discovery_limited"));
         if (capacityPercent() >= Math.min(StorageConfig.WARNING_THRESHOLD.get(), StorageConfig.FULL_THRESHOLD.get()))
             return DeviceStatus.WARNING.withMessage(label("status", "storage_warning"));

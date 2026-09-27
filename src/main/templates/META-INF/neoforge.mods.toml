@@ -26,6 +26,13 @@ versionRange="${homecore_version_range}"
 ordering="AFTER"
 side="BOTH"
 [[dependencies.${mod_id}]]
+modId="homelink_energy"
+type="required"
+reason="Storage Controllers and Deposits run on HE supplied by HomeLink Energy (solar panels, wind turbines, batteries, cables)."
+versionRange="${energy_version_range}"
+ordering="NONE"
+side="BOTH"
+[[dependencies.${mod_id}]]
 modId="jei"
 type="optional"
 versionRange="${jei_version_range}"

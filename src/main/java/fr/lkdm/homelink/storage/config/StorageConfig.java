@@ -20,6 +20,9 @@ public final class StorageConfig {
     public static final ModConfigSpec.DoubleValue WARNING_THRESHOLD;
     public static final ModConfigSpec.DoubleValue FULL_THRESHOLD;
     public static final ModConfigSpec.DoubleValue HYSTERESIS;
+    public static final ModConfigSpec.IntValue CONTROLLER_ENERGY;
+    public static final ModConfigSpec.IntValue INVENTORY_ENERGY;
+    public static final ModConfigSpec.IntValue DEPOSIT_ENERGY;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -38,6 +41,10 @@ public final class StorageConfig {
         WARNING_THRESHOLD = decimal(builder, "warning_threshold", "Occupied slot percentage that triggers warning.", 90, 1, 100);
         FULL_THRESHOLD = decimal(builder, "full_threshold", "Occupied slot percentage that triggers full event.", 100, 1, 100);
         HYSTERESIS = decimal(builder, "hysteresis", "Percentage points below a threshold required to rearm events.", 5, 1, 25);
+        // HomeLink Energy (HE) per minute (1200 ticks). For scale: a Solar Panel I averages 100 HE per minute over a day.
+        CONTROLLER_ENERGY = integer(builder, "controller_energy", "HE per minute a Controller uses to run its network (Terminals, Links, Repeaters). Without it the network stops. 0 = free.", 40, 0, 1_000_000);
+        INVENTORY_ENERGY = integer(builder, "inventory_energy", "Extra HE per minute for every inventory connected to the Controller.", 2, 0, 1_000_000);
+        DEPOSIT_ENERGY = integer(builder, "deposit_energy", "HE per minute a connected Deposit uses to sort; without it sorting stops. 0 = free.", 20, 0, 1_000_000);
         SPEC = builder.build();
     }
 
