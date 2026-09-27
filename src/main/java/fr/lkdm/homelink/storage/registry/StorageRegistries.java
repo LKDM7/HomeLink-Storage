@@ -29,7 +29,7 @@ public final class StorageRegistries {
             BlockEntityType.Builder.of(fr.lkdm.homelink.storage.blockentity.DepositBlockEntity::new, DEPOSIT.get()).build(null));
     public static final DeferredHolder<MenuType<?>, MenuType<fr.lkdm.homelink.storage.menu.DepositMenu>> DEPOSIT_MENU = MENUS.register("storage_deposit", () -> IMenuTypeExtension.create(fr.lkdm.homelink.storage.menu.DepositMenu::new));
     public static final DeferredBlock<fr.lkdm.homelink.storage.block.OverflowBlock> OVERFLOW = BLOCKS.register("storage_overflow", () ->
-            new fr.lkdm.homelink.storage.block.OverflowBlock(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_PURPLE).strength(3.0F, 6.0F).requiresCorrectToolForDrops()));
+            new fr.lkdm.homelink.storage.block.OverflowBlock(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_GRAY).strength(3.0F, 6.0F).requiresCorrectToolForDrops()));
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<fr.lkdm.homelink.storage.blockentity.OverflowBlockEntity>> OVERFLOW_ENTITY = ENTITIES.register("storage_overflow", () ->
             BlockEntityType.Builder.of(fr.lkdm.homelink.storage.blockentity.OverflowBlockEntity::new, OVERFLOW.get()).build(null));
     public static final DeferredBlock<StorageBlock> CONTROLLER = block("storage_controller");
