@@ -4,7 +4,7 @@ Toutes les recettes se font sur une table de fabrication 3 × 3. Elles apparaiss
 le livre après l’obtention de cuivre ou de redstone.
 
 Comme HomeLink Farm, les appareils utilisent les composants électroniques partagés de
-HomeCore 1.7.0 :
+HomeCore 1.10.0 :
 
 - **Carte électronique HomeLink** / HomeLink Circuit Board (`homecore:homelink_circuit_board`) :
   4 cuivre + 4 redstone + 1 quartz → 2 cartes ;

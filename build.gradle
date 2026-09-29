@@ -9,9 +9,28 @@ group = mod_group_id
 base { archivesName = mod_id }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories {
+    maven {
+        name = 'HomeCorePackages'
+        url = uri('https://maven.pkg.github.com/LKDM7/HomeCore')
+        credentials {
+            username = providers.gradleProperty('githubUser').orElse(providers.environmentVariable('GITHUB_ACTOR')).getOrElse('')
+            password = providers.gradleProperty('githubToken').orElse(providers.environmentVariable('HOMELINK_PACKAGES_TOKEN')).orElse(providers.environmentVariable('GITHUB_TOKEN')).getOrElse('')
+        }
+        content { includeGroup 'fr.lkdm.homecore' }
+    }
+
+    maven {
+        name = 'EnergyPackages'
+        url = uri('https://maven.pkg.github.com/LKDM7/HomeLink-Energy')
+        credentials {
+            username = providers.gradleProperty('githubUser').orElse(providers.environmentVariable('GITHUB_ACTOR')).getOrElse('')
+            password = providers.gradleProperty('githubToken').orElse(providers.environmentVariable('HOMELINK_PACKAGES_TOKEN')).orElse(providers.environmentVariable('GITHUB_TOKEN')).getOrElse('')
+        }
+        content { includeGroup 'fr.lkdm.homelink.energy' }
+    }
+
     mavenCentral()
-    // HomeLink Energy, published with ./gradlew publishToMavenLocal from its repository.
-    mavenLocal { content { includeGroup "fr.lkdm.homelink.energy" } }
+
     maven { url = 'https://maven.blamejared.com/'; content { includeGroup 'mezz.jei'; includeGroup 'net.mezzdev.config' } }
 }
 // JEI is an optional client integration: compiled against its API, never embedded or required.

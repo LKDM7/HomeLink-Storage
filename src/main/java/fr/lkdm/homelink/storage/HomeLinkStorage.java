@@ -14,7 +14,13 @@ public final class HomeLinkStorage {
 
     public HomeLinkStorage(IEventBus bus, ModContainer container) {
         StorageRegistries.register(bus);
+        bus.addListener((net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent event) -> event.enqueueWork(() ->
+                DashboardAPI.registerDeviceProvider(StorageRegistries.STORAGE_ENTITY.get(),
+                        fr.lkdm.homelink.storage.homelink.StorageDevice::new)));
         bus.addListener((net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent event) -> {
+            event.registerBlockEntity(fr.lkdm.homecore.api.item.ItemApi.BLOCK,
+                    StorageRegistries.DEPOSIT_ENTITY.get(), (entity, side) -> depositOpen(entity, side)
+                            ? fr.lkdm.homecore.api.item.ItemApi.of(entity.inventory(), fr.lkdm.homecore.api.item.ItemPortType.INPUT) : null);
             event.registerBlockEntity(net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK,
                     StorageRegistries.DEPOSIT_ENTITY.get(), (entity, side) -> depositOpen(entity, side) ? entity.inventory() : null);
             // Hoppers and Links see the overflow chest as an ordinary inventory.

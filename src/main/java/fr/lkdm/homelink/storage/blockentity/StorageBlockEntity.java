@@ -51,6 +51,7 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
     private UUID id = UUID.randomUUID();
     private UUID owner;
     private UUID networkId;
+    private boolean networkInitialized;
     private UUID controllerId;
     private BlockPos controllerPos;
     private StorageDevice device;
@@ -87,6 +88,12 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
     public UUID id() { return id; }
     public UUID owner() { return owner; }
     public UUID networkId() { return networkId; }
+    public void setHomeNetwork(UUID network) {
+        networkId = network;
+        networkInitialized = true;
+        metadataRevision++;
+        setChanged();
+    }
     public StorageDevice device() { return device; }
     public long metadataRevision() { return metadataRevision; }
     public String logicalName() { return logicalName; }
@@ -265,9 +272,10 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
     public void ensureHomeCore() {
         if (!isController() || owner == null || isRemoved() || registrationFailed || !(level instanceof ServerLevel server)) return;
         try {
-            if (networkId == null) {
+            if (networkId == null && !networkInitialized) {
                 networkId = DashboardAPI.networks(server.getServer()).createNetwork(logicalName.isBlank() ? "HomeLink Storage" : logicalName, owner).id();
                 DashboardAPI.networks(server.getServer()).addDevice(networkId, id);
+                networkInitialized = true;
                 setChanged();
             }
             if (device == null) {
@@ -633,6 +641,7 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
         tag.put("Zones", zoneTag);
         if (owner != null) tag.putUUID("Owner", owner);
         if (networkId != null) tag.putUUID("HomeNetwork", networkId);
+        tag.putBoolean("HomeNetworkInitialized", networkInitialized);
         if (controllerId != null && controllerPos != null) {
             tag.putUUID("ControllerId", controllerId);
             tag.putLong("ControllerPos", controllerPos.asLong());
@@ -675,6 +684,7 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
         for (String key : zoneTag.getAllKeys()) if (zones.size() < 64 && key.length() <= 64 && !key.isBlank()) zones.put(key, savedName(zoneTag.getString(key)));
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         networkId = tag.hasUUID("HomeNetwork") ? tag.getUUID("HomeNetwork") : null;
+        networkInitialized = networkId != null || tag.getBoolean("HomeNetworkInitialized");
         controllerId = tag.hasUUID("ControllerId") ? tag.getUUID("ControllerId") : null;
         controllerPos = controllerId == null ? null : BlockPos.of(tag.getLong("ControllerPos"));
         coverage.clear();

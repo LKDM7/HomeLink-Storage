@@ -30,7 +30,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 
 /** Adapter of the storage controller to HomeCore's public, server-scoped API. */
-public final class StorageDevice implements DashboardDevice {
+public final class StorageDevice implements DashboardDevice, fr.lkdm.homecore.api.network.NetworkMember {
     private final StorageBlockEntity entity;
     private final DeviceMetric<Percentage> capacity = DeviceMetric.builder(id("capacity"), label("metric", "capacity"),
             MetricTypes.PERCENTAGE, new Percentage(0)).unit(Unit.PERCENT).build();
@@ -84,6 +84,15 @@ public final class StorageDevice implements DashboardDevice {
     }
 
     @Override public UUID id() { return entity.id(); }
+    @Override public Optional<UUID> homeNetwork() { return Optional.ofNullable(entity.networkId()); }
+    @Override public Optional<UUID> owner() { return Optional.ofNullable(entity.owner()); }
+    @Override public boolean canConfigure(net.minecraft.server.level.ServerPlayer player) {
+        return isValid() && (player.hasPermissions(2) || owner().filter(player.getUUID()::equals).isPresent()
+                || entity.permission(player, Permission.CONFIGURE));
+    }
+    @Override public void homeNetworkChanged(Optional<fr.lkdm.homecore.api.network.HomeNetwork> network) {
+        entity.setHomeNetwork(network.map(fr.lkdm.homecore.api.network.HomeNetwork::id).orElse(null));
+    }
     @Override public ResourceLocation deviceType() { return id("storage_controller"); }
     @Override public Component displayName() { return entity.getDisplayName(); }
     @Override public List<DeviceMetric<?>> metrics() { return metrics; }

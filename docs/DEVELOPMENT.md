@@ -2,7 +2,7 @@
 
 Le serveur détient les identités, le graphe de couverture, les inventaires découverts,
 l’index, les permissions et les statistiques. HomeCore est une dépendance obligatoire,
-compilée en composite Gradle depuis le checkout configurable `homecore_dir`. Aucun
+résolue depuis une publication Maven versionnée, ou compilée depuis le checkout `homecore_dir` avec `-PuseLocalDependencies=true`. Aucun
 package interne HomeCore ou HomeLink Dashboard n’est importé.
 
 ## Organisation
@@ -62,12 +62,11 @@ ce qui laisse les packs de ressources contrôler les matériaux.
 
 Utiliser Java 21 et le wrapper : `build`, `runSmoke`, puis `runPersistence` avec
 `-PpersistencePass=write` et `-PpersistencePass=read`. `releaseBundle` rassemble
-les deux JAR dans `build/release`. Les scénarios exécutables emploient le vrai runtime
+les JAR du mod et de ses dépendances obligatoires dans `build/release`. Les scénarios exécutables emploient le vrai runtime
 Minecraft depuis le source set `verification` et ne sont pas embarqués.
 
 ## Extensions possibles
 
 Les identités et positions préparent les labels et cartes. Le comparateur utilise la
-capacité ; un futur mode item pourra interroger l’index. Dépôt, routage et widgets
-spécialisés restent hors de la V1. Un Dashboard générique peut déjà consommer
+capacité ; un futur mode item pourra interroger l’index. Le Deposit assure le tri vers les inventaires existants ; les règles de routage personnalisées restent hors de cette version. Un Dashboard générique peut déjà consommer
 l’appareil via HomeCore.

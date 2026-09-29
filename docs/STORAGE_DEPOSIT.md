@@ -64,7 +64,7 @@ Redstone Hopper Redstone
 ```
 
 Le module de contrôle (`homecore:homelink_control_module`) s'assemble à l'Electronics
-Workbench de HomeCore 1.7.0.
+Workbench de HomeCore 1.10.0.
 
 Résultat : un Storage Deposit. Le caisson possède un bac supérieur encastré, une
 façade cyan, des bordures en cuivre et des aérations. Les textures de matériaux
@@ -76,8 +76,7 @@ Le GUI utilise leur cadre métallique et leurs composants StorageTheme.
 Le Deposit hérite de la liaison UUID/position, du propriétaire et des permissions
 existantes de StorageBlockEntity. La liaison requiert CONFIGURE et le menu CONTROL.
 Les hoppers conservent leur comportement d'automatisation physique vanilla.
-Le Deposit ne devient pas un appareil Dashboard séparé. HomeCore 1.3.0 est toujours
-compilé depuis le vrai projet voisin ; aucune classe ni API HomeCore n'est copiée.
+Le Deposit ne devient pas un appareil Dashboard séparé. Le port partagé `ItemApi.BLOCK` est de type `INPUT` sur les faces d'entrée. HomeCore 1.10.0 reste une dépendance séparée ; aucune classe ni API HomeCore n'est copiée.
 
 L'inventaire, la liaison et le prochain emplacement sont sauvegardés. Le délai
 repart à 20 ticks au chargement ; les états affichés sont recalculés. Fermer le menu
