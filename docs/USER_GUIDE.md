@@ -1,6 +1,6 @@
-# Guide utilisateur — HomeLink Storage 1.1.0
+# Guide utilisateur — HomeLink Storage 1.1.1
 
-Installer HomeCore 1.10.0, HomeLink Energy 0.2.2 et HomeLink Storage 1.1.0 sur Minecraft 1.21.1 avec
+Installer HomeCore 1.11.0, HomeLink Energy 0.3.0 et HomeLink Storage 1.1.1 sur Minecraft 1.21.1 avec
 NeoForge 21.1.251 et Java 21, côté client et serveur. Les quatre blocs sont
 craftables et disponibles dans l’onglet créatif HomeLink Storage.
 
@@ -161,7 +161,7 @@ que compté partiellement.
 
 ## English quick start
 
-Install HomeCore 1.10.0, HomeLink Energy 0.2.2 and HomeLink Storage 1.1.0 on both sides. Place a Controller,
+Install HomeCore 1.11.0, HomeLink Energy 0.3.0 and HomeLink Storage 1.1.1 on both sides. Place a Controller,
 then a Link in the chunk containing your inventories. Sneak-use the Controller with
 an empty hand, then bind the Link, Repeaters and Terminal. Each active Repeater covers
 one cardinally adjacent chunk in a connected chain. Open the Terminal to search,
