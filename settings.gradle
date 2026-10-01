@@ -46,7 +46,7 @@ if (providers.gradleProperty('useLocalDependencies').getOrElse('true').toBoolean
 }
 
 if (providers.gradleProperty('withDashboard').isPresent()) {
-    def integrationDir = file(providers.gradleProperty('dashboard_dir').getOrElse('../HomeLink-Dashboard'))
+    def integrationDir = file(providers.gradleProperty('dashboard_dir').getOrElse('../HomeLink'))
     includeBuild(integrationDir) {
         dependencySubstitution { substitute module('fr.lkdm.homelink.dashboard:homelink_dashboard') using project(':') }
     }

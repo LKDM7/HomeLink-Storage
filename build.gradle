@@ -57,7 +57,7 @@ configurations {
 def withDashboard = providers.gradleProperty('withDashboard').isPresent()
 if (withDashboard) {
     sourceSets.verification.java.srcDir 'src/dashboardVerification/java'
-    dependencies { verificationImplementation 'fr.lkdm.homelink.dashboard:homelink_dashboard:1.0.0' }
+    dependencies { verificationImplementation 'fr.lkdm.homelink.dashboard:homelink_dashboard:1.5.1' }
 }
 neoForge {
     version = project.neo_version

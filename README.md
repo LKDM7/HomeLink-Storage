@@ -89,6 +89,6 @@ Les quatre blocs possèdent des géométries 3D distinctes, construites avec des
 vanilla pour rester compatibles avec les packs de ressources. Les inventaires moddées
 passent par la capability standard NeoForge ; chaque mod tiers n’a pas été testé
 individuellement. Le test optionnel Dashboard utilise le vrai checkout voisin
-`../HomeLink-Dashboard` (configurable avec `-Pdashboard_dir`).
+`../HomeLink` (configurable avec `-Pdashboard_dir`).
 
 Licence Apache-2.0, auteur LKDM.
