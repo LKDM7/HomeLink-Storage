@@ -42,6 +42,16 @@ dependencies {
     compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
     if (withJei) runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    // Tests reading project files (translations) resolve them from here.
+    systemProperty 'homelink_storage.projectDir', project.projectDir.absolutePath
+    testLogging { events 'passed', 'failed', 'skipped' }
 }
 sourceSets {
     verification {
@@ -177,4 +187,12 @@ tasks.register('releaseBundle', Sync) {
     from(configurations.runtimeClasspath.filter { it.name == homecoreJarName })
     from('README.md', 'LICENSE')
     from('docs') { into 'docs' }
+}
+
+// Unit tests run against the Minecraft classpath without starting a game.
+neoForge {
+    unitTest {
+        enable()
+        testedMod = mods."${mod_id}"
+    }
 }
