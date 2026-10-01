@@ -1,4 +1,4 @@
-# HomeLink Storage 1.2.0
+# HomeLink Storage 1.3.0
 
 Minecraft 1.21.1 · NeoForge 21.1.251 · Java 21.
 
@@ -20,7 +20,7 @@ Le [Storage Deposit](docs/STORAGE_DEPOSIT.md) ajoute un coffre d'entrée de 27 s
 une stack par seconde est rangée dans un inventaire connecté contenant déjà la même
 variante. Il se relie au Controller avec la clé USB de liaison existante.
 
-Installer `homelink_storage-1.2.0.jar`, `homecore-1.12.0.jar` et `homelink_energy-0.4.1.jar` dans le dossier
+Installer `homelink_storage-1.3.0.jar`, `homecore-1.13.0.jar` et `homelink_energy-0.5.0.jar` dans le dossier
 `mods` du client et du serveur NeoForge.
 
 1. Placer un Storage Controller.
@@ -36,8 +36,8 @@ Le Controller peut se poser sur toute face d’un bloc. Son voyant clignote lors
 des inventaires sont connectés. Dans la grille du Terminal, double-clic ou Maj+clic retire une stack,
 clic droit une demi-stack, Ctrl+clic un objet et clic molette remplit l’inventaire ; le
 champ Quantité retire un nombre libre. Les objets viennent de n’importe quel coffre du
-réseau. La permission HomeCore CONTROL est nécessaire. JEI est pris en charge en option :
-R/U sur la grille, recherche synchronisée et récupération des ingrédients d’une recette.
+réseau. La permission HomeCore CONTROL est nécessaire. JEI (19+) et REI (16+) sont pris en charge en option :
+R/U sur la grille, recherche synchronisée, récupération des ingrédients d’une recette et une page d’information pour chaque objet du mod.
 
 Le Terminal possède deux modèles : sur pied lorsqu’il est posé sur le dessus d’un
 bloc, et panneau mince lorsqu’il est fixé à un mur ou sous un bloc.
@@ -67,7 +67,7 @@ git clone https://github.com/LKDM7/HomeLink-Energy ../HomeLinkEnergy
 
 L’emplacement de HomeCore est configurable avec
 `-Phomecore_dir=../autre-checkout`. Avec `-PuseLocalDependencies=true`, le composite Gradle compile la vraie API
-HomeCore 1.12.0 sans embarquer ses classes dans Storage. HomeLink Dashboard n’est pas
+HomeCore 1.13.0 sans embarquer ses classes dans Storage. HomeLink Dashboard n’est pas
 une dépendance : Storage reprend son langage visuel et expose ses données au Dashboard
 uniquement au travers de HomeCore.
 

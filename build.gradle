@@ -32,9 +32,13 @@ repositories {
     mavenCentral()
 
     maven { url = 'https://maven.blamejared.com/'; content { includeGroup 'mezz.jei'; includeGroup 'net.mezzdev.config' } }
+    maven { url = 'https://maven.shedaniel.me/'; content { includeGroup 'me.shedaniel'; includeGroup 'me.shedaniel.cloth' } }
+    maven { url = 'https://maven.architectury.dev/'; content { includeGroup 'dev.architectury' } }
+    maven { url = 'https://maven.fabricmc.net/'; content { includeGroup 'net.fabricmc' } }
 }
-// JEI is an optional client integration: compiled against its API, never embedded or required.
+// JEI and REI are optional client integrations: compiled against their APIs, never embedded or required.
 def withJei = providers.gradleProperty('withJei').isPresent()
+def withRei = providers.gradleProperty('withRei').isPresent()
 dependencies {
     implementation "fr.lkdm.homecore:homecore:${homecore_version}"
     // Required at runtime: Controllers and Deposits only run on HE supplied by HomeLink Energy networks.
@@ -42,6 +46,14 @@ dependencies {
     compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
     compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
     if (withJei) runtimeOnly "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
+    compileOnly "me.shedaniel:RoughlyEnoughItems-api-neoforge:${rei_version}"
+    // Information pages use REI's built-in display type, shipped in the full REI artifact.
+    compileOnly("me.shedaniel:RoughlyEnoughItems-neoforge:${rei_version}") { transitive = false }
+    // REI's focused-stack hook returns an Architectury event result.
+    compileOnly("dev.architectury:architectury-neoforge:${architectury_version}") { transitive = false }
+    // REI annotates its API with net.fabricmc.api.Environment; only that annotation type is needed to compile.
+    compileOnly("net.fabricmc:fabric-loader:0.16.14") { transitive = false }
+    if (withRei) runtimeOnly "me.shedaniel:RoughlyEnoughItems-neoforge:${rei_version}"
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -67,7 +79,7 @@ configurations {
 def withDashboard = providers.gradleProperty('withDashboard').isPresent()
 if (withDashboard) {
     sourceSets.verification.java.srcDir 'src/dashboardVerification/java'
-    dependencies { verificationImplementation 'fr.lkdm.homelink.dashboard:homelink_dashboard:1.5.1' }
+    dependencies { verificationImplementation 'fr.lkdm.homelink.dashboard:homelink_dashboard:1.6.0' }
 }
 neoForge {
     version = project.neo_version
@@ -106,7 +118,7 @@ tasks.named('runPersistence') {
 }
 def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
     def values = ['minecraft_version_range', 'neo_version_range', 'loader_version_range',
-                  'mod_id', 'mod_name', 'mod_license', 'mod_version', 'mod_authors', 'mod_description', 'homecore_version_range', 'jei_version_range', 'energy_version_range']
+                  'mod_id', 'mod_name', 'mod_license', 'mod_version', 'mod_authors', 'mod_description', 'homecore_version_range', 'jei_version_range', 'rei_version_range', 'energy_version_range']
             .collectEntries { [(it): project.property(it)] }
     inputs.properties values
     expand values
@@ -171,6 +183,7 @@ tasks.named('runSmoke') {
                        'STORAGE_OVERFLOW_CHECKS_OK', 'STORAGE_PENDING_CLIENT_CHECKS_OK']
         if (withDashboard) markers += 'STORAGE_DASHBOARD_CHECKS_OK'
         if (withJei) markers += 'STORAGE_RECIPE_VIEWER_CHECKS_OK jei=true'
+        if (withRei) markers += 'rei=true'
         if (markers.any { !log.contains(it) } || log.contains('STORAGE_SMOKE_FAILED')) {
             throw new GradleException('In-game verification failed: inspect build/validation/client/logs/latest.log')
         }

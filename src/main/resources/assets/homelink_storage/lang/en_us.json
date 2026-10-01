@@ -154,5 +154,12 @@
   "screen.homelink_storage.deposit.idle": "CONNECTED - IDLE",
   "screen.homelink_storage.deposit.sorting": "CONNECTED - SORTING",
   "screen.homelink_storage.deposit.blocked": "BLOCKED - no available destination",
-  "screen.homelink_storage.deposit.connect_hint": "Use the USB Linking Key to connect a Controller."
+  "screen.homelink_storage.deposit.connect_hint": "Use the USB Linking Key to connect a Controller.",
+  "info.homelink_storage.storage_controller": "Heart of a storage network: it indexes every connected inventory and decides who may see or take what. Whoever places it owns it.\nIts screen manages the network: name, inventories, zones and HomeNetwork binding. It runs on HomeLink Energy (HE); unpowered, the network is frozen.\nSelect it first (sneak-click with an empty hand or with the USB Linking Key), then sneak-click the blocks to link.",
+  "info.homelink_storage.storage_link": "Connects every chest, barrel, placed shulker box or compatible inventory of its whole chunk to the Controller.\nA double chest counts once, even across a chunk border, and several Links covering one inventory never double its items. Chunks are never force-loaded.",
+  "info.homelink_storage.storage_repeater": "Adds its own chunk to the network coverage. It must touch an active Link or Repeater on a north, south, east or west side; chains can go on from chunk to chunk.\nDiagonals do not connect, and a loop of Repeaters without a Link stays offline.",
+  "info.homelink_storage.storage_terminal": "The only block that shows the network's items and lets you take them out.\nSearch by name, id, namespace or #tag, sort, filter by zone, locate an item's chest, and withdraw: double-click or shift-click for a stack, right-click for half, Ctrl-click for one, middle-click to fill your inventory.\nWith JEI or REI, the + button of a recipe fetches its missing ingredients from the network.",
+  "info.homelink_storage.storage_deposit": "Drop items into its 27 slots: they go to the connected chests that already hold the same item.\nAn item with no such chest waits 5 seconds, then goes to an Overflow Chest of the network, or keeps waiting in the Deposit. Hoppers and pipes reach it from the top, back and sides; a comparator reads how full it is.",
+  "info.homelink_storage.storage_overflow": "Receives, after 5 seconds, the deposited items that no chest of the network already holds.\nIt has no screen: take its contents out from the Terminal like any other item.",
+  "info.homelink_storage.link_key": "USB Linking Key: right-click the Controller, then the blocks to link to it (Link, Repeater, Terminal, Deposit, Overflow Chest)."
 }
