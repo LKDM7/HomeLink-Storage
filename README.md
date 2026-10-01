@@ -20,7 +20,7 @@ Le [Storage Deposit](docs/STORAGE_DEPOSIT.md) ajoute un coffre d'entrée de 27 s
 une stack par seconde est rangée dans un inventaire connecté contenant déjà la même
 variante. Il se relie au Controller avec la clé USB de liaison existante.
 
-Installer `homelink_storage-1.2.0.jar`, `homecore-1.12.0.jar` et `homelink_energy-0.4.0.jar` dans le dossier
+Installer `homelink_storage-1.2.0.jar`, `homecore-1.12.0.jar` et `homelink_energy-0.4.1.jar` dans le dossier
 `mods` du client et du serveur NeoForge.
 
 1. Placer un Storage Controller.
