@@ -2,9 +2,17 @@
 
 ## Contrat actuel
 
-Storage 1.1.1 demande HomeCore **1.11.0**, API **1.7.0**, avec la plage `[1.11.0,2.0.0)`. La version exacte est déclarée dans `gradle.properties` ; un composite local utilise un checkout de même version et ne nécessite pas Maven local.
+Storage 1.2.0 demande HomeCore **1.12.0**, API **1.8.0**, avec la plage `[1.12.0,2.0.0)`. La version exacte est déclarée dans `gradle.properties` ; un composite local utilise un checkout de même version et ne nécessite pas Maven local.
 
 Le Controller implémente `NetworkMember` et les demandes de liaison passent par `DashboardAPI.bindDevice()`. HomeCore applique les permissions sur le réseau quitté et le réseau rejoint. Le Storage Deposit expose `ItemApi.BLOCK` de type `INPUT` sur ses faces d’entrée ; les transferts FarmBot et Quarry utilisent ce même contrat. La liaison interne des composants Storage au Controller reste une fonction de la clé Storage.
+
+Depuis Storage 1.2.0, le Controller publie `StockProvider.CAPABILITY`. Un consommateur (par
+exemple HomeLink Tasks) lit le stock indexé sans importer les classes de Storage. Chaque appel
+revérifie le réseau lié, la permission `VIEW` du joueur et l'alimentation ; sinon la réponse est
+`UNAVAILABLE`. Un inventaire déchargé, hors couverture ou dont le dernier scan est trop ancien rend
+la réponse `PARTIAL`. Les quantités sont attribuées à la position canonique de chaque inventaire,
+et la lecture ne rescanne, n'extrait et ne réserve rien. `READ_AND_WITHDRAW` n'est indiqué que si
+le joueur a aussi la permission `CONTROL`.
 
 ## Historique des inspections
 

@@ -1,4 +1,4 @@
-# HomeLink Storage 1.1.1
+# HomeLink Storage 1.2.0
 
 Minecraft 1.21.1 · NeoForge 21.1.251 · Java 21.
 
@@ -20,7 +20,7 @@ Le [Storage Deposit](docs/STORAGE_DEPOSIT.md) ajoute un coffre d'entrée de 27 s
 une stack par seconde est rangée dans un inventaire connecté contenant déjà la même
 variante. Il se relie au Controller avec la clé USB de liaison existante.
 
-Installer `homelink_storage-1.1.1.jar`, `homecore-1.11.0.jar` et `homelink_energy-0.3.0.jar` dans le dossier
+Installer `homelink_storage-1.2.0.jar`, `homecore-1.12.0.jar` et `homelink_energy-0.4.0.jar` dans le dossier
 `mods` du client et du serveur NeoForge.
 
 1. Placer un Storage Controller.
@@ -67,7 +67,7 @@ git clone https://github.com/LKDM7/HomeLink-Energy ../HomeLinkEnergy
 
 L’emplacement de HomeCore est configurable avec
 `-Phomecore_dir=../autre-checkout`. Avec `-PuseLocalDependencies=true`, le composite Gradle compile la vraie API
-HomeCore 1.11.0 sans embarquer ses classes dans Storage. HomeLink Dashboard n’est pas
+HomeCore 1.12.0 sans embarquer ses classes dans Storage. HomeLink Dashboard n’est pas
 une dépendance : Storage reprend son langage visuel et expose ses données au Dashboard
 uniquement au travers de HomeCore.
 

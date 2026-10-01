@@ -16,6 +16,8 @@ public final class InventoryConnection {
     public BlockPos inventoryPos;
     /** Actual block position used to query the capability. */
     public BlockPos accessPos;
+    /** Actual server tick of the last successful index scan; never persisted. */
+    public long observedTick = -1;
     public String name = "";
     public String zone = "misc";
     public StorageInventoryAdapter.Status status = StorageInventoryAdapter.Status.UNLOADED;

@@ -41,6 +41,7 @@ public final class StorageDevice implements DashboardDevice, fr.lkdm.homecore.ap
     private final DeviceMetric<Integer> full = integerMetric("full_inventories");
     private final List<DeviceMetric<?>> metrics = List.of(capacity, items, unique, inventories, full);
     private final List<DeviceAction<?>> actions;
+    private final fr.lkdm.homecore.api.capability.CapabilitySet capabilities;
     private final Map<UUID, Boolean> connectionStates = new HashMap<>();
     private boolean warningEmitted;
     private boolean fullEmitted;
@@ -53,6 +54,11 @@ public final class StorageDevice implements DashboardDevice, fr.lkdm.homecore.ap
 
     public StorageDevice(StorageBlockEntity entity) {
         this.entity = entity;
+        // Only a controller owns an index, so only a controller can answer a stock question.
+        this.capabilities = entity.isController()
+                ? fr.lkdm.homecore.api.capability.CapabilitySet.builder()
+                        .add(fr.lkdm.homecore.api.stock.StockProvider.CAPABILITY, new StorageStockProvider(entity)).build()
+                : fr.lkdm.homecore.api.capability.CapabilitySet.empty();
         warningEmitted = entity.warningLatched();
         fullEmitted = entity.fullLatched();
         actions = List.of(DeviceAction.button(id("refresh_index"), label("action", "refresh_index"))
@@ -97,6 +103,10 @@ public final class StorageDevice implements DashboardDevice, fr.lkdm.homecore.ap
     @Override public Component displayName() { return entity.getDisplayName(); }
     @Override public List<DeviceMetric<?>> metrics() { return metrics; }
     @Override public List<DeviceAction<?>> actions() { return actions; }
+    @Override public Set<ResourceLocation> capabilities() { return capabilities.ids(); }
+    @Override public <T> Optional<T> capability(fr.lkdm.homecore.api.capability.DeviceCapability<T> capability) {
+        return capabilities.query(capability);
+    }
     @Override public Set<ResourceLocation> eventTypes() {
         return Set.of(id("storage_warning"), id("storage_full"), id("inventory_offline"), id("inventory_online"));
     }

@@ -589,6 +589,7 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
                 return;
             }
             index.update(adapter.identity(), adapter.handler());
+            connection.observedTick = server.getGameTime();
             connection.status = StorageInventoryAdapter.Status.ONLINE;
             reportedFailures.remove(connection.linkId);
         } catch (RuntimeException failure) {
