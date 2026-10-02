@@ -358,6 +358,11 @@ public final class StorageSmoke {
                     net.minecraft.client.Screenshot.grab(client.gameDirectory, "storage-link-key.png", client.getMainRenderTarget(),
                             message -> LogUtils.getLogger().info("STORAGE_LINK_KEY_MODEL_SCREENSHOT {}", message.getString()));
                     client.setScreen(null);
+                    phase = 50;
+                    onServer(client, PipeClientChecks::prepare);
+                }
+                case 50 -> {
+                    if (!serverDone || !PipeClientChecks.tick(client)) return;
                     if (Boolean.getBoolean("storage.dashboardSmoke")) {
                         phase = 30;
                         onServer(client, player -> {

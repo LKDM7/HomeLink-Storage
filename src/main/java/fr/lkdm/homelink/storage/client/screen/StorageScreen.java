@@ -129,8 +129,11 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
             button("forget_offline", 198, 194, 170, () -> {
                 if (selectedLocation != null) menu.send("forget_inventory", selectedLocation.linkId().toString(), "");
             });
-            button("refresh", 10, 194, 86, () -> menu.send("refresh", "", ""));
-            button("close", 102, 194, 88, this::onClose);
+            button("refresh", 10, 194, 56, () -> menu.send("refresh", "", ""));
+            // Pipes / recovery view of this Controller, answered by the server after its own checks.
+            button("pipes", 70, 194, 58, () -> net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+                    new fr.lkdm.homelink.storage.logistics.sync.PipePayloads.RecoveryAction(menu.position(), "open", "")));
+            button("close", 132, 194, 58, this::onClose);
         } else {
             // Terminal: find and take items; configuration lives on the Controller.
             boolean viewer = RecipeViewerBridge.available();

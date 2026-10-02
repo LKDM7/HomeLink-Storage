@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/block",
+  "render_type": "minecraft:translucent",
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "minecraft:block/copper_block",
+    "glass": "minecraft:block/light_gray_stained_glass"
+  },
+  "elements": [
+    {"from": [4.5, 4.5, 4.5], "to": [11.5, 11.5, 4.5], "faces": {"north": {"uv": [4.5, 4.5, 11.5, 11.5], "texture": "#glass"}}}
+  ]
+}

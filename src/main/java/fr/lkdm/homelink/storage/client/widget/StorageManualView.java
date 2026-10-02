@@ -15,7 +15,7 @@ import org.lwjgl.glfw.GLFW;
 
 /** Local translated reference pages. Opening or scrolling the manual sends no requests. */
 public final class StorageManualView {
-    private static final String[] CHAPTERS = {"start", "connect", "search", "monitor", "trouble"};
+    private static final String[] CHAPTERS = {"start", "connect", "search", "monitor", "trouble", "pipes"};
     private record Line(FormattedCharSequence text, boolean heading) { }
     private final Font font;
     private List<Line> lines = List.of();

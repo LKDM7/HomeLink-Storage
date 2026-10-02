@@ -55,7 +55,7 @@ public final class HomeCoreChecks {
         check(DashboardAPI.devices(server).get(deviceId).orElseThrow() == controller.device(), "Controller not registered with real HomeCore");
         check(DashboardAPI.networks(server).getDevices(networkId).contains(deviceId), "Device missing from persistent HomeNetwork");
         check(controller.permission(player, Permission.VIEW) && controller.permission(player, Permission.CONTROL), "Owner permissions denied");
-        check(controller.device().metrics().size() == 5, "Storage metric definitions missing");
+        check(controller.device().metrics().size() == 16, "Storage and pipe metric definitions missing");
         check(metric(controller, "capacity").equals(new Percentage(0)), "Capacity metric must use real Percentage type");
         check(metric(controller, "inventory_count").equals(1), "Inventory metric mismatch");
         check(DashboardAPI.executeAction(player, networkId, deviceId, id("refresh_index"), Unit.INSTANCE).isSuccess(), "Owner refresh action failed");
@@ -104,7 +104,7 @@ public final class HomeCoreChecks {
         level.destroyBlock(temporaryPos, false);
         check(DashboardAPI.devices(server).get(temporary.id()).isEmpty(), "Destroyed controller stayed registered");
         partialRebuildLatches(player, controller);
-        LogUtils.getLogger().info("STORAGE_HOMECORE_SERVER_CHECKS_OK sdk={} registration=true metrics=5 owner_action=true viewer_denied=true warning_action_denied=true hysteresis=true inventory_events=true lifecycle=true partial_rebuild_latches=true", DashboardAPI.API_VERSION);
+        LogUtils.getLogger().info("STORAGE_HOMECORE_SERVER_CHECKS_OK sdk={} registration=true metrics=16 owner_action=true viewer_denied=true warning_action_denied=true hysteresis=true inventory_events=true lifecycle=true partial_rebuild_latches=true", DashboardAPI.API_VERSION);
     }
 
     private static void partialRebuildLatches(ServerPlayer player, StorageBlockEntity controller) {
@@ -149,7 +149,7 @@ public final class HomeCoreChecks {
         if (!subscribed) { HomeCoreClient.subscribeNetwork(networkId); subscribed = true; return false; }
         var snapshot = ClientDeviceCache.INSTANCE.devices().get(new ClientDeviceCache.DeviceKey(networkId, deviceId));
         if (snapshot == null) return false;
-        check(snapshot.data().getList("metrics", 10).size() == 5, "HomeCore client snapshot missing metrics");
+        check(snapshot.data().getList("metrics", 10).size() == 16, "HomeCore client snapshot missing metrics");
         if (request == null) { request = HomeCoreClient.executeAction(networkId, deviceId, id("refresh_index"), Unit.INSTANCE); return false; }
         var response = ClientDeviceCache.INSTANCE.recentMessages().stream().filter(HomeCorePayloads.ActionResultResponse.class::isInstance)
                 .map(HomeCorePayloads.ActionResultResponse.class::cast).filter(result -> result.requestId().equals(request)).findFirst();
@@ -176,7 +176,7 @@ public final class HomeCoreChecks {
         if (!eventReceived) return false;
         HomeCoreClient.unsubscribe(networkId);
         clientVerified = true;
-        LogUtils.getLogger().info("STORAGE_HOMECORE_CLIENT_CHECKS_OK snapshot_metrics=5 action_request_response=true event_transport=true");
+        LogUtils.getLogger().info("STORAGE_HOMECORE_CLIENT_CHECKS_OK snapshot_metrics=16 action_request_response=true event_transport=true");
         return true;
     }
 

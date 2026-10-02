@@ -123,6 +123,25 @@ public final class StorageInventoryAdapter {
         return new Resolution(Status.ONLINE, new StorageInventoryAdapter(identity, inventoryPos, handler, extractionHandler));
     }
 
+    /**
+     * Physical identity of the inventory at a loaded position, by the same rules as
+     * {@link #resolve}: both halves of a double chest share the lower position. Returns null
+     * when a double chest's partner is unloaded or inconsistent, without loading its chunk.
+     * Unlike {@link #resolveAny}, this never chooses a capability face.
+     */
+    public static @Nullable BlockPos identity(ServerLevel level, BlockPos inventoryPos) {
+        if (level.isOutsideBuildHeight(inventoryPos) || !level.isLoaded(inventoryPos)) return null;
+        BlockState state = level.getBlockState(inventoryPos);
+        if (!(state.getBlock() instanceof ChestBlock) || state.getValue(ChestBlock.TYPE) == ChestType.SINGLE) return inventoryPos.immutable();
+        BlockPos partnerPos = inventoryPos.relative(ChestBlock.getConnectedDirection(state));
+        if (!level.isLoaded(partnerPos)) return null;
+        BlockState partner = level.getBlockState(partnerPos);
+        if (!partner.is(state.getBlock()) || partner.getValue(ChestBlock.TYPE) != state.getValue(ChestBlock.TYPE).getOpposite()
+                || partner.getValue(ChestBlock.FACING) != state.getValue(ChestBlock.FACING)
+                || !partnerPos.relative(ChestBlock.getConnectedDirection(partner)).equals(inventoryPos)) return null;
+        return (inventoryPos.compareTo(partnerPos) <= 0 ? inventoryPos : partnerPos).immutable();
+    }
+
     /** Resolves a monitored block without assuming which side exposes its item capability. */
     public static Resolution resolveAny(ServerLevel level, BlockPos inventoryPos) {
         Resolution neutral = resolve(level, inventoryPos, null);

@@ -41,6 +41,14 @@ public final class StorageRegistries {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<StorageBlockEntity>> STORAGE_ENTITY = ENTITIES.register("storage", () ->
             BlockEntityType.Builder.of(StorageBlockEntity::new, CONTROLLER.get(), TERMINAL.get(), LINK.get(), REPEATER.get()).build(null));
     public static final DeferredHolder<MenuType<?>, MenuType<StorageMenu>> STORAGE_MENU = MENUS.register("storage", () -> IMenuTypeExtension.create(StorageMenu::new));
+    /** Transparent item pipe; one tier, coordinated by the Controller it touches. */
+    public static final DeferredBlock<fr.lkdm.homelink.storage.logistics.pipe.StoragePipeBlock> PIPE = BLOCKS.register("storage_pipe", () ->
+            new fr.lkdm.homelink.storage.logistics.pipe.StoragePipeBlock(BlockBehaviour.Properties.of().mapColor(MapColor.COLOR_ORANGE).strength(1.5F, 6.0F)
+                    .sound(net.minecraft.world.level.block.SoundType.COPPER).noOcclusion().requiresCorrectToolForDrops()
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK).isRedstoneConductor((state, level, pos) -> false)
+                    .isSuffocating((state, level, pos) -> false).isViewBlocking((state, level, pos) -> false)));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<fr.lkdm.homelink.storage.logistics.pipe.StoragePipeBlockEntity>> PIPE_ENTITY = ENTITIES.register("storage_pipe", () ->
+            BlockEntityType.Builder.of(fr.lkdm.homelink.storage.logistics.pipe.StoragePipeBlockEntity::new, PIPE.get()).build(null));
 
     static {
         ITEMS.registerSimpleBlockItem(DEPOSIT);
@@ -49,10 +57,11 @@ public final class StorageRegistries {
         ITEMS.registerSimpleBlockItem(TERMINAL);
         ITEMS.registerSimpleBlockItem(LINK);
         ITEMS.registerSimpleBlockItem(REPEATER);
+        ITEMS.registerSimpleBlockItem(PIPE);
         TABS.register("storage", () -> CreativeModeTab.builder()
                 .title(Component.translatable("itemGroup.homelink_storage"))
                 .icon(() -> CONTROLLER.get().asItem().getDefaultInstance())
-                .displayItems((params, output) -> { output.accept(CONTROLLER); output.accept(TERMINAL); output.accept(LINK); output.accept(REPEATER); output.accept(LINK_KEY); output.accept(DEPOSIT); output.accept(OVERFLOW); }).build());
+                .displayItems((params, output) -> { output.accept(CONTROLLER); output.accept(TERMINAL); output.accept(LINK); output.accept(REPEATER); output.accept(LINK_KEY); output.accept(DEPOSIT); output.accept(OVERFLOW); output.accept(PIPE); }).build());
     }
 
     private static DeferredBlock<StorageBlock> block(String name) {

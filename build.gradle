@@ -77,6 +77,14 @@ configurations {
     verificationCompileOnly.extendsFrom compileOnly
 }
 def withDashboard = providers.gradleProperty('withDashboard').isPresent()
+// Optional runtime fixtures only; never part of the release dependencies or JAR.
+def pipeInterop = providers.gradleProperty('pipeInterop').isPresent()
+if (pipeInterop) {
+    dependencies {
+        verificationRuntimeOnly files(providers.gradleProperty('pipeFarmJar').getOrElse('../FarmLink/build/libs/homelink_farm-1.5.0.jar'))
+        verificationRuntimeOnly files(providers.gradleProperty('pipeQuarryJar').getOrElse('../HomeLinkQuarry/build/libs/homelink_quarry-1.4.0.jar'))
+    }
+}
 if (withDashboard) {
     sourceSets.verification.java.srcDir 'src/dashboardVerification/java'
     dependencies { verificationImplementation 'fr.lkdm.homelink.dashboard:homelink_dashboard:1.6.0' }
@@ -101,6 +109,7 @@ neoForge {
         }
         persistence {
             type = 'gameTestServer'
+            if (pipeInterop) sourceSet = sourceSets.verification
             loadedMods = [mods.homelink_storage, mods.storage_validation]
             gameDirectory = file('build/validation/persistence')
             systemProperty 'neoforge.enabledGameTestNamespaces', 'storage_validation'
@@ -147,6 +156,10 @@ tasks.register('verifyReleaseJar') {
             }
             for (def path : ['fr/lkdm/homelink/storage/HomeLinkStorage.class', 'META-INF/neoforge.mods.toml',
                               'fr/lkdm/homelink/storage/blockentity/DepositBlockEntity.class',
+                              'fr/lkdm/homelink/storage/logistics/transit/TransitLedger.class',
+                              'fr/lkdm/homelink/storage/logistics/pipe/StoragePipeBlock.class',
+                              'assets/homelink_storage/blockstates/storage_pipe.json',
+                              'data/homelink_storage/recipe/storage_pipe.json',
                               'fr/lkdm/homelink/storage/storage/inventory/StorageInsertion.class',
                               'assets/homelink_storage/blockstates/storage_deposit.json',
                               'assets/homelink_storage/blockstates/storage_overflow.json', 'data/homelink_storage/recipe/storage_overflow.json',
@@ -180,7 +193,7 @@ tasks.named('runSmoke') {
                        'STORAGE_DOUBLE_CHEST_CHECKS_OK', 'STORAGE_WITHDRAWAL_CHECKS_OK', 'STORAGE_WITHDRAWAL_CLIENT_OK',
                        'STORAGE_TERMINAL_MOUNT_CHECKS_OK', 'STORAGE_LINK_KEY_CHECKS_OK', 'STORAGE_DEPOSIT_CLIENT_CHECKS_OK',
                        'STORAGE_WITHDRAW_ANY_CHECKS_OK', 'STORAGE_INGREDIENT_PLAN_CHECKS_OK', 'STORAGE_RECIPE_VIEWER_CHECKS_OK', 'STORAGE_TERMINAL_ONLY_CHECKS_OK', 'STORAGE_CONTROLLER_SCREEN_CHECKS_OK', 'STORAGE_COVERAGE_ZONE_CHECKS_OK', 'STORAGE_COVERAGE_TOGGLE_CHECKS_OK',
-                       'STORAGE_OVERFLOW_CHECKS_OK', 'STORAGE_PENDING_CLIENT_CHECKS_OK']
+                       'STORAGE_OVERFLOW_CHECKS_OK', 'STORAGE_PENDING_CLIENT_CHECKS_OK', 'STORAGE_PIPE_CLIENT_CHECKS_OK']
         if (withDashboard) markers += 'STORAGE_DASHBOARD_CHECKS_OK'
         if (withJei) markers += 'STORAGE_RECIPE_VIEWER_CHECKS_OK jei=true'
         if (withRei) markers += 'rei=true'

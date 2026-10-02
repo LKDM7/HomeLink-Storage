@@ -1,4 +1,19 @@
-# HomeLink Storage 1.3.0
+# HomeLink Storage 1.4.0
+
+**Storage Pipes / Tuyaux de stockage** : transport physique d'objets dans des tubes
+transparents, utilisables **sans Controller et sans coût HE**. Réglez chaque raccord en
+entrée ou sortie du contenant, choisissez plusieurs types d'objets dans les filtres,
+et ajoutez éventuellement un Controller pour la supervision/récupération.
+
+English: physical item transport inside transparent pipes, with per-face direction,
+multi-item filters and standalone operation without HE. A Controller is optional
+for managed energy, supervision and recovery. Included in this
+mod; no extra Router or Logistics JAR.
+
+- [Guide FR/EN et recette](docs/STORAGE_PIPES.md)
+- [Architecture et conservation](docs/STORAGE_PIPES_ARCHITECTURE.md)
+- [Validations réellement exécutées](docs/PIPES_VALIDATION.md)
+- [Changelog 1.4.0](CHANGELOG.md)
 
 Minecraft 1.21.1 · NeoForge 21.1.251 · Java 21.
 

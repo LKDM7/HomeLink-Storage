@@ -31,6 +31,8 @@ public final class HomeLinkStorage {
             event.registerBlockEntity(fr.lkdm.homecore.api.energy.EnergyApi.BLOCK, StorageRegistries.DEPOSIT_ENTITY.get(), (entity, side) -> entity.energyPort());
         });
         container.registerConfig(ModConfig.Type.SERVER, StorageConfig.SPEC);
+        // Display preferences only; read on physical clients, never by the server.
+        container.registerConfig(ModConfig.Type.CLIENT, fr.lkdm.homelink.storage.config.StorageClientConfig.SPEC);
         // Resolve the actual API at runtime, in addition to the mandatory loader dependency.
         DashboardAPI.providers();
     }

@@ -43,7 +43,7 @@ import net.minecraft.world.level.block.state.BlockState;
 /** Server-owned identity, chunk coverage graph, scheduled index and HomeCore lifecycle. */
 public class StorageBlockEntity extends BlockEntity implements MenuProvider {
     /** HomeLink Energy received through the HomeCore energy capability; only powered devices work. */
-    private final fr.lkdm.homecore.api.energy.EnergyBuffer energy = new fr.lkdm.homecore.api.energy.EnergyBuffer(() -> energyPerMinute() * 2, this::setChanged);
+    private final fr.lkdm.homecore.api.energy.EnergyBuffer energy = new fr.lkdm.homecore.api.energy.EnergyBuffer(() -> (energyPerMinute() + logisticsReserve()) * 2, this::setChanged);
     private boolean powered;
     private record Discovery(CoverageNode source, StorageInventoryAdapter adapter) { }
     private record LegacyMetadata(String name, String zone) { }
@@ -125,7 +125,7 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
         return StorageConfig.CONTROLLER_ENERGY.get() + (long) StorageConfig.INVENTORY_ENERGY.get() * connections.size();
     }
     /** Energy port exposed on every face, or null when this device needs no energy. */
-    public fr.lkdm.homecore.api.energy.EnergyBuffer energyPort() { return energyPerMinute() > 0 ? energy : null; }
+    public fr.lkdm.homecore.api.energy.EnergyBuffer energyPort() { return energyPerMinute() + logisticsReserve() > 0 ? energy : null; }
     /** Whether the last working tick found enough HE. */
     public boolean powered() { return powered || energyPerMinute() <= 0; }
     /** Pays this tick's share of the running cost; the device does nothing on a tick that returns false. */
@@ -133,6 +133,51 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
         boolean now = energy.draw(energyPerMinute(), 1200, level.getGameTime());
         if (now != powered) { powered = now; setChanged(); }
         return now;
+    }
+
+    // Storage Pipes: the Controller coordinates its circuits and pays 1 HE (by default) per departing cargo.
+    private boolean pipesPaused;
+    private int pipeCircuits;
+
+    /** Departures and transit of this Controller's pipes are held; the index and Terminals keep working. */
+    public boolean pipesPaused() { return pipesPaused; }
+    public void setPipesPaused(boolean paused) {
+        if (pipesPaused == paused) return;
+        pipesPaused = paused;
+        metadataRevision++;
+        setChanged();
+    }
+
+    /**
+     * Number of pipe circuits this Controller manages. While it has any, its HE buffer also holds
+     * one minute of departures; the running cost itself is unchanged.
+     */
+    public void setPipeCircuits(int circuits) {
+        if (pipeCircuits == circuits) return;
+        boolean exposed = energyPort() != null;
+        pipeCircuits = circuits;
+        if (exposed != (energyPort() != null) && level != null) level.invalidateCapabilities(worldPosition);
+    }
+
+    private long logisticsReserve() {
+        if (!isController() || pipeCircuits <= 0 || !StorageConfig.SPEC.isLoaded()) return 0;
+        long perDeparture = StorageConfig.PIPE_ENERGY.get();
+        long rounds = 1200L / Math.max(1, StorageConfig.PIPE_DISPATCH_INTERVAL.get());
+        return Math.min(1_000_000_000L, perDeparture * StorageConfig.PIPE_DEPARTURES.get() * Math.max(1, rounds));
+    }
+
+    /** Whether one departure can be paid now, before any object leaves its container. */
+    public boolean canPayLogistics(long amount) { return amount <= 0 || energy.stored() >= amount; }
+
+    /** Pays a departure that actually happened; a cancelled attempt is never charged. */
+    public boolean payLogistics(long amount) { return energy.consume(amount); }
+    public void refundLogistics(long amount) { if (amount > 0) energy.insert(amount, false); }
+
+    /** Re-reads only the indexed connection of one physical inventory after a pipe moved objects. */
+    public void inventoryChanged(BlockPos identity) {
+        if (!isController()) return;
+        for (InventoryConnection connection : connections.values())
+            if (identity.equals(connection.inventoryPos) && connection.status == StorageInventoryAdapter.Status.ONLINE) { scan(connection.linkId); return; }
     }
 
     public void setOwner(UUID owner) { this.owner = owner; setChanged(); }
@@ -228,6 +273,8 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
 
     public void destroyed() {
         if (!(level instanceof ServerLevel server)) return;
+        // Cargo of its pipes is resolved once, from the ledger, without loading any chunk.
+        if (isController()) fr.lkdm.homelink.storage.logistics.network.PipeNetworkManager.get(server).controllerDestroyed(this);
         if (isController() && networkId != null) {
             var manager = DashboardAPI.networks(server.getServer());
             manager.getNetwork(networkId).ifPresent(home -> {
@@ -278,6 +325,8 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
                 networkInitialized = true;
                 setChanged();
             }
+            // HomeCore can prune an unavailable device during a chunk transition. Rejoin on load.
+            if (device != null && DashboardAPI.devices(server.getServer()).get(id).isEmpty()) device = null;
             if (device == null) {
                 StorageDevice candidate = new StorageDevice(this);
                 DashboardAPI.devices(server.getServer()).register(candidate);
@@ -308,7 +357,7 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
         if (!entity.isController()) return;
         entity.ensureHomeCore();
         // Without HE the whole network stops: no scans, no automation, no withdrawals.
-        if (!entity.drawEnergy(level)) return;
+        if (!entity.drawEnergy(level)) { if (entity.device != null) entity.device.update(); return; }
         int verification = StorageConfig.VERIFY_INTERVAL.get();
         int rescan = StorageConfig.RESCAN_INTERVAL.get();
         if (entity.coverageDirty || level.getGameTime() % verification == Math.floorMod(pos.asLong(), verification)) entity.verifyCoverage();
@@ -633,6 +682,7 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
         tag.putInt("StorageFormat", 2);
         energy.save(tag, "Energy");
         tag.putBoolean("Powered", powered);
+        tag.putBoolean("PipesPaused", pipesPaused);
         tag.putUUID("Id", id);
         tag.putString("Name", logicalName);
         tag.putBoolean("WarningLatched", warningLatched);
@@ -676,6 +726,7 @@ public class StorageBlockEntity extends BlockEntity implements MenuProvider {
         if (tag.hasUUID("Id")) id = tag.getUUID("Id");
         energy.load(tag, "Energy");
         powered = tag.getBoolean("Powered");
+        pipesPaused = tag.getBoolean("PipesPaused");
         logicalName = savedName(tag.getString("Name"));
         warningLatched = tag.getBoolean("WarningLatched");
         fullLatched = tag.getBoolean("FullLatched");

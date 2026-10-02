@@ -44,6 +44,7 @@ jobs:
             build/gametest/logs/
             build/persistence/logs/
             build/validation/**/logs/
+            build/validation/**/screenshots/
       - name: Preserve release JARs separately
         uses: actions/upload-artifact@v4
         with:
