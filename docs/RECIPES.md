@@ -4,7 +4,7 @@ Toutes les recettes se font sur une table de fabrication 3 × 3. Elles apparaiss
 le livre après l’obtention de cuivre ou de redstone.
 
 Comme HomeLink Farm, les appareils utilisent les composants électroniques partagés de
-HomeCore 1.10.0 :
+HomeCore (version requise : 1.13.0) :
 
 - **Carte électronique HomeLink** / HomeLink Circuit Board (`homecore:homelink_circuit_board`) :
   4 cuivre + 4 redstone + 1 quartz → 2 cartes ;
@@ -26,6 +26,7 @@ Chaque appareil prend le composant qui correspond à son rôle :
 - le Deposit, qui range les objets tout seul, demande un module de contrôle ;
 - le Terminal demande une carte, le coffre de débordement une carte et un microprocesseur ;
 - la clé USB reste un simple outil vanilla.
+- les Storage Pipes utilisent uniquement du cuivre, du verre et de la redstone.
 
 ## Storage Controller — 1
 
@@ -117,8 +118,23 @@ R C R
 - R : poudre de redstone / redstone dust × 2
 - C : lingot de cuivre / copper ingot × 1
 
-Une pioche de n’importe quel niveau récupère les six blocs. Chacun possède un modèle
-3D distinct. Les géométries et matériaux vanilla utilisés sont documentés dans
+## Tuyau de stockage / Storage Pipe — 8
+
+```text
+C G C
+C R C
+C G C
+```
+
+- C : lingot de cuivre / copper ingot × 6
+- G : verre / glass × 2
+- R : poudre de redstone / redstone dust × 1
+
+Les raccords et filtres sont intégrés au tuyau : aucun module supplémentaire à
+fabriquer. Le [guide FR/EN](STORAGE_PIPES.md) décrit le montage et le sens des objets.
+
+Une pioche de n’importe quel niveau récupère les sept blocs. Chacun possède un modèle
+3D distinct. Les géométries et matériaux utilisés sont documentés dans
 `assets/homelink_storage/MATERIALS.md`.
 
 Avec JEI, le bouton **+** d’une de ces recettes, Terminal ouvert, récupère les

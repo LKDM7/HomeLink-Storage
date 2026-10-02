@@ -2,7 +2,7 @@
 
 ## Contrat actuel
 
-Storage 1.3.0 demande HomeCore **1.13.0**, API **1.8.0**, avec la plage `[1.13.0,2.0.0)`. La version exacte est déclarée dans `gradle.properties` ; un composite local utilise un checkout de même version et ne nécessite pas Maven local.
+Storage 1.4.0 demande HomeCore **1.13.0**, API **1.8.0**, avec la plage `[1.13.0,2.0.0)`. La version exacte est déclarée dans `gradle.properties` ; un composite local utilise un checkout de même version et ne nécessite pas Maven local.
 
 Le Controller implémente `NetworkMember` et les demandes de liaison passent par `DashboardAPI.bindDevice()`. HomeCore applique les permissions sur le réseau quitté et le réseau rejoint. Le Storage Deposit expose `ItemApi.BLOCK` de type `INPUT` sur ses faces d’entrée ; les transferts FarmBot et Quarry utilisent ce même contrat. La liaison interne des composants Storage au Controller reste une fonction de la clé Storage.
 
@@ -13,6 +13,13 @@ revérifie le réseau lié, la permission `VIEW` du joueur et l'alimentation ; s
 la réponse `PARTIAL`. Les quantités sont attribuées à la position canonique de chaque inventaire,
 et la lecture ne rescanne, n'extrait et ne réserve rien. `READ_AND_WITHDRAW` n'est indiqué que si
 le joueur a aussi la permission `CONTROL`.
+
+Les Storage Pipes consultent `ItemApi.BLOCK` sur la face réellement reliée et
+respectent `INPUT`, `OUTPUT` et `BOTH`, sans contourner un refus par un autre handler.
+La supervision des circuits gérés passe par le Device du Controller : aucune
+entrée HomeCore par segment. Le transit et la récupération ne sont pas du stock
+disponible pour `StockProvider`. Voir [l'architecture](STORAGE_PIPES_ARCHITECTURE.md)
+pour les permissions et la distinction des réseaux physiques, Storage et HomeCore.
 
 ## Historique des inspections
 

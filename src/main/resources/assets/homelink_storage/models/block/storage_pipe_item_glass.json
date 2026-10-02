@@ -1,0 +1,22 @@
+{
+  "parent": "minecraft:block/block",
+  "render_type": "minecraft:translucent",
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "homelink_storage:block/pipe_graphite",
+    "glass": "homelink_storage:block/pipe_glass",
+    "frame": "homelink_storage:block/pipe_graphite",
+    "copper": "homelink_storage:block/pipe_copper",
+    "recess": "homelink_storage:block/pipe_graphite"
+  },
+  "elements": [
+    {"from": [6.5, 11.4875, 0], "to": [9.5, 11.5125, 16], "faces": {"up": {"uv": [0, 0, 16, 16], "texture": "#glass"}, "down": {"uv": [0, 0, 16, 16], "texture": "#glass"}}},
+    {"from": [6.5, 4.4875, 0], "to": [9.5, 4.5125, 16], "faces": {"up": {"uv": [0, 0, 16, 16], "texture": "#glass"}, "down": {"uv": [0, 0, 16, 16], "texture": "#glass"}}},
+    {"from": [4.4875, 6.5, 0], "to": [4.5125, 9.5, 16], "faces": {"east": {"uv": [0, 0, 16, 16], "texture": "#glass"}, "west": {"uv": [0, 0, 16, 16], "texture": "#glass"}}},
+    {"from": [11.4875, 6.5, 0], "to": [11.5125, 9.5, 16], "faces": {"east": {"uv": [0, 0, 16, 16], "texture": "#glass"}, "west": {"uv": [0, 0, 16, 16], "texture": "#glass"}}},
+    {"from": [9.08579, 10.4875, 0], "to": [11.91421, 10.5125, 16], "faces": {"up": {"uv": [0, 0, 16, 16], "texture": "#glass"}, "down": {"uv": [0, 0, 16, 16], "texture": "#glass"}}, "rotation": {"origin": [10.5, 10.5, 8], "axis": "z", "angle": -45, "rescale": false}},
+    {"from": [4.08579, 10.4875, 0], "to": [6.91421, 10.5125, 16], "faces": {"up": {"uv": [0, 0, 16, 16], "texture": "#glass"}, "down": {"uv": [0, 0, 16, 16], "texture": "#glass"}}, "rotation": {"origin": [5.5, 10.5, 8], "axis": "z", "angle": 45, "rescale": false}},
+    {"from": [9.08579, 5.4875, 0], "to": [11.91421, 5.5125, 16], "faces": {"up": {"uv": [0, 0, 16, 16], "texture": "#glass"}, "down": {"uv": [0, 0, 16, 16], "texture": "#glass"}}, "rotation": {"origin": [10.5, 5.5, 8], "axis": "z", "angle": 45, "rescale": false}},
+    {"from": [4.08579, 5.4875, 0], "to": [6.91421, 5.5125, 16], "faces": {"up": {"uv": [0, 0, 16, 16], "texture": "#glass"}, "down": {"uv": [0, 0, 16, 16], "texture": "#glass"}}, "rotation": {"origin": [5.5, 5.5, 8], "axis": "z", "angle": -45, "rescale": false}}
+  ]
+}

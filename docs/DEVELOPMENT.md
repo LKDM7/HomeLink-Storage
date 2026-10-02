@@ -11,8 +11,11 @@ package interne HomeCore ou HomeLink Dashboard n’est importé.
 - `storage/network` : nœuds de couverture, connexions découvertes et associations.
 - `storage/inventory` : ItemHandler et identité canonique des doubles coffres.
 - `storage/index` : compteurs incrémentaux par item et data components.
+- `logistics` : graphe physique des pipes, ports par face, routage borné,
+  filtres et ledger persistant des cargaisons.
 - `menu`, `network` : sessions validées, snapshots fragmentés et deltas.
 - `client` : thème Dashboard, manuel, recherche, écran et marqueur privé.
+- `client/logistics` : configuration des raccords, catalogue d'items et rendu du transit.
 - `homelink` : appareil, métriques, actions et événements publics HomeCore.
 - `config` : cadencement et limites serveur.
 
@@ -54,9 +57,25 @@ appareil et retire son appartenance en conservant les réseaux partagés.
 
 `StorageTheme` reprend les constantes visuelles publiques du projet
 HomeLink Dashboard observé au commit `6f110fb96b6a090e4c2e30de242a6dee3f14a4e4`,
-sans créer de dépendance binaire. `StorageManualView` fournit cinq chapitres traduits.
-Les quatre modèles JSON ont des géométries propres et utilisent des textures vanilla,
-ce qui laisse les packs de ressources contrôler les matériaux.
+sans créer de dépendance binaire. `StorageManualView` fournit six chapitres traduits,
+dont les Storage Pipes. Les appareils utilisent des géométries propres et des textures
+vanilla ; les pipes ont trois textures RGBA originales (verre, graphite, cuivre).
+Les modèles composites NeoForge séparent métal opaque et verre translucide.
+Les formes de sélection des pipes sont calculées à la demande et suivent le tube
+biseauté et ses raccords. Voir [l'architecture des pipes](STORAGE_PIPES_ARCHITECTURE.md).
+
+Les scripts d'assets utilisent uniquement Python 3, sans dépendance de build ou runtime :
+
+```powershell
+python scripts/generate_pipe_models.py
+python scripts/validate_pipe_models.py
+```
+
+Si Python est fourni par uv : `uv run --offline scripts/validate_pipe_models.py`.
+Le générateur régénère modèles, blockstates et textures de manière déterministe.
+Le validateur contrôle les 4096 états, l'exclusivité collier/raccord, les références,
+les UV, les couches de rendu et l'épaisseur des panneaux de verre ; il n'évalue pas
+la qualité visuelle, vérifiée séparément dans le vrai client avec `runSmoke`.
 
 ## Vérifier
 
@@ -64,6 +83,9 @@ Utiliser Java 21 et le wrapper : `build`, `runSmoke`, puis `runPersistence` avec
 `-PpersistencePass=write` et `-PpersistencePass=read`. `releaseBundle` rassemble
 les JAR du mod et de ses dépendances obligatoires dans `build/release`. Les scénarios exécutables emploient le vrai runtime
 Minecraft depuis le source set `verification` et ne sont pas embarqués.
+La CI contrôle aussi les modèles avec `python3 scripts/validate_pipe_models.py`.
+Les [résultats des pipes](PIPES_VALIDATION.md) distinguent les tests exécutés,
+les captures et les contrôles manuels restant à faire.
 
 ## Extensions possibles
 

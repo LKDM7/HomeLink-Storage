@@ -28,7 +28,8 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class PipeRenderer implements BlockEntityRenderer<StoragePipeBlockEntity> {
     private static final ResourceLocation LAMP = ResourceLocation.withDefaultNamespace("textures/block/white_concrete.png");
-    private static final float LAMP_HALF = 1.0F / 16;
+    private static final float LAMP_HALF_WIDTH = 0.75F / 16;
+    private static final float LAMP_HALF_HEIGHT = 0.25F / 16;
     private static final float CORE_OUT = (float) (StoragePipeBlock.CORE_MAX / 16.0) + 0.002F;
 
     public PipeRenderer(BlockEntityRendererProvider.Context context) { }
@@ -76,22 +77,24 @@ public final class PipeRenderer implements BlockEntityRenderer<StoragePipeBlockE
         VertexConsumer consumer = buffers.getBuffer(emissive ? RenderType.entityTranslucentEmissive(LAMP) : RenderType.entityTranslucent(LAMP));
         int packed = emissive ? LightTexture.FULL_BRIGHT : light;
         var state = pipe.getBlockState();
+        Direction.Axis tubeAxis = StoragePipeBlock.straightAxis(state);
         int r = rgb >> 16 & 0xFF, g = rgb >> 8 & 0xFF, b = rgb & 0xFF, a = (int) (Math.min(1F, alpha) * 255);
         PoseStack.Pose last = pose.last();
         for (Direction side : Direction.values()) {
             if (StoragePipeBlock.side(state, side) != PipeConnection.NONE) continue;
-            quad(consumer, last, side, r, g, b, a, packed);
+            quad(consumer, last, side, tubeAxis, r, g, b, a, packed);
         }
     }
 
-    /** Small square on the outside of the glass core, on a side without connector. */
-    private static void quad(VertexConsumer consumer, PoseStack.Pose pose, Direction side, int r, int g, int b, int a, int light) {
-        float c = 0.5F, h = LAMP_HALF, out = CORE_OUT - 0.5F;
+    /** Small indicator strip in the recessed pad on a closed side of the junction. */
+    private static void quad(VertexConsumer consumer, PoseStack.Pose pose, Direction side, Direction.Axis tubeAxis, int r, int g, int b, int a, int light) {
+        float c = 0.5F, out = CORE_OUT - 0.5F;
+        float w = LAMP_HALF_WIDTH, h = LAMP_HALF_HEIGHT;
         float nx = side.getStepX(), ny = side.getStepY(), nz = side.getStepZ();
         // Two in-plane axes of the side.
         Direction.Axis axis = side.getAxis();
         float[][] corners = new float[4][3];
-        float[][] offsets = {{-h, -h}, {h, -h}, {h, h}, {-h, h}};
+        float[][] offsets = {{-w, -h}, {w, -h}, {w, h}, {-w, h}};
         for (int i = 0; i < 4; i++) {
             float u = offsets[i][0], v = offsets[i][1];
             float x = c + nx * out, y = c + ny * out, z = c + nz * out;
@@ -99,6 +102,14 @@ public final class PipeRenderer implements BlockEntityRenderer<StoragePipeBlockE
                 case X -> { y += u; z += v; }
                 case Y -> { x += u; z += v; }
                 case Z -> { x += u; y += v; }
+            }
+            if (tubeAxis != null) {
+                // The straight model's pad sits beside the near collar, not in mid-glass.
+                float[] at = {c + nx * out, c + ny * out, c + nz * out};
+                for (Direction.Axis plane : Direction.Axis.values())
+                    if (plane != axis && plane != tubeAxis) at[plane.ordinal()] += u;
+                at[tubeAxis.ordinal()] = (tubeAxis == Direction.Axis.Z ? 1F : 15F) / 16 + v;
+                x = at[0]; y = at[1]; z = at[2];
             }
             corners[i] = new float[]{x, y, z};
         }

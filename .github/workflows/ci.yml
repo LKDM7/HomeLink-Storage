@@ -27,6 +27,8 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Validate pipe model assets
+        run: python3 scripts/validate_pipe_models.py
       - name: Build, unit tests and release archive
         run: bash gradlew build test verifyReleaseJar -PuseLocalDependencies=false --no-daemon --no-configuration-cache
       - name: Persistence write

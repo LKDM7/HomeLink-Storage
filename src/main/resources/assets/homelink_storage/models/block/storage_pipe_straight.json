@@ -7,11 +7,11 @@
   },
   "children": {
     "metal": {
-      "parent": "homelink_storage:block/storage_pipe_cap_metal",
+      "parent": "homelink_storage:block/storage_pipe_straight_metal",
       "render_type": "minecraft:solid"
     },
     "glass": {
-      "parent": "homelink_storage:block/storage_pipe_cap_glass",
+      "parent": "homelink_storage:block/storage_pipe_straight_glass",
       "render_type": "minecraft:translucent"
     }
   },

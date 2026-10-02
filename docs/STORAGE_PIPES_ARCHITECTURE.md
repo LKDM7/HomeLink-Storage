@@ -105,10 +105,41 @@ All metrics belong to the existing StorageDevice, with stable definitions.
 unknown. Delivered/minute counts accepted items in a 60-second server-tick window.
 Events are emitted on transitions. Pipes add no HomeCore device per segment.
 
+## Native model assets
+
+`scripts/generate_pipe_models.py` generates the native JSON models and three
+32×32 RGBA material textures, with Python's standard library. It is an asset
+maintenance tool, not a build or runtime dependency. NeoForge's built-in
+`neoforge:composite` loader combines solid metal and translucent glass child
+models, with two ordered item render passes. Metal UV dimensions follow the
+geometry to avoid stretched material details. Glass walls have a small nonzero
+thickness so their front and back faces are not coplanar. The glass remains translucent;
+graphite and copper are opaque rim bars around an open bore. Straight connections
+use a continuous octagonal prism instead of the junction core. A multipart condition
+selects the three axes without adding saved blockstate properties. Elbows, T junctions
+and crossings keep their independent arms and glass inspection chamber.
+
+Pipe-to-pipe collars and container sockets are separate multipart conditions;
+only one is applied to each connected face. A container socket has an open square
+mounting plate, three successive octagonal sleeve bands and four raised copper
+bolts. Its rear extends 1.025 model pixels into the neighbouring block to reach
+recessed vanilla chest walls. Selection follows the flange and sleeve on all six
+directions. Junction brackets form continuous edges instead of loose corner cubes.
+
+The six four-valued side properties have 4096 combinations. Collision shapes are
+computed lazily with `dynamicShape()` and cached by their physical connection masks
+(at most 729 distinct geometries), sharing container/Controller outlines. Bevel boxes
+are combined before one final optimization; no per-frame shape generation is needed.
+Straight status strips sit on the collar pads; other strips remain on closed chamber
+faces. Cargo movement and server routing do not depend on the visual model.
+
+
 ## References checked
 
 - Local resolved HomeCore 1.13.0: ItemApi, ItemPort, ItemPortType, EnergyBuffer,
   NetworkMember, PermissionValidator, DashboardDevice, DeviceMetric.
+- Local NeoForge 21.1.251 sources: CompositeModel loader, chunk render-layer union
+  and ordered item passes, checked in the resolved sources archive.
 - [NeoForge 1.21–1.21.1 capabilities](https://docs.neoforged.net/docs/1.21.1/inventories/capabilities/):
   sided block capabilities, cache lifecycle and invalidation.
 

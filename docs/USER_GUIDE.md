@@ -1,8 +1,24 @@
-# Guide utilisateur — HomeLink Storage 1.3.0
+# Guide utilisateur — HomeLink Storage 1.4.0
 
-Installer HomeCore 1.13.0, HomeLink Energy 0.5.0 et HomeLink Storage 1.3.0 sur Minecraft 1.21.1 avec
-NeoForge 21.1.251 et Java 21, côté client et serveur. Les quatre blocs sont
+Installer HomeCore 1.13.0, HomeLink Energy 0.5.0 et HomeLink Storage 1.4.0 sur Minecraft 1.21.1 avec
+NeoForge 21.1.251 et Java 21, côté client et serveur. Les sept blocs sont
 craftables et disponibles dans l’onglet créatif HomeLink Storage.
+
+## Transport par Storage Pipes
+
+Posez des tuyaux entre deux contenants : ils se raccordent automatiquement.
+Cliquez à main vide sur le raccord source et appliquez **SORTIE : COFFRE → TUYAU** ;
+sur la destination, appliquez **ENTRÉE : TUYAU → COFFRE**. Chaque face conserve
+son réglage et son filtre. Aucun objet n'est extrait avant validation.
+
+Les tuyaux fonctionnent sans Controller et sans HE lorsque les deux raccords sont
+validés par le même propriétaire. Un Controller alimenté peut coordonner les
+circuits et fournir supervision/récupération. L'index des Links reste distinct.
+Le tube octogonal laisse voir les cargaisons ; une bride à manchon cuivre et quatre
+boulons apparaît au contact du contenant. Le filtre propose tous les objets
+enregistrés, même ceux que vous ne possédez pas, avec recherche et sélection multiple.
+Consultez le [guide Storage Pipes FR/EN](STORAGE_PIPES.md) pour la recette,
+les filtres, les temps de trajet et la récupération.
 
 ## Construire un réseau
 
@@ -46,9 +62,9 @@ Le Terminal reprend le style de HomeLink Dashboard : cadre graphite, accents cui
 états colorés et boutons biseautés. Il présente les totaux, la capacité, les zones,
 les objets et leurs emplacements.
 
-Cliquer sur le bouton **?** ouvre le manuel en jeu. Ses cinq chapitres expliquent la
+Cliquer sur le bouton **?** ouvre le manuel en jeu. Ses six chapitres expliquent la
 mise en route, la couverture Link/Repeater, la recherche, la surveillance et le
-dépannage. La molette fait défiler le texte ; les flèches, les touches gauche/droite
+dépannage, ainsi que les Storage Pipes. La molette fait défiler le texte ; les flèches, les touches gauche/droite
 ou Page précédente/Page suivante changent de chapitre.
 
 ## Rechercher et localiser
@@ -161,7 +177,13 @@ que compté partiellement.
 
 ## English quick start
 
-Install HomeCore 1.13.0, HomeLink Energy 0.5.0 and HomeLink Storage 1.3.0 on both sides. Place a Controller,
+Install HomeCore 1.13.0, HomeLink Energy 0.5.0 and HomeLink Storage 1.4.0 on both sides.
+For physical transport, connect containers with Storage Pipes, apply EXTRACT
+(container → pipe) at the source and INSERT (pipe → container) at the destination.
+Standalone transport needs the same owner at both endpoints, no Controller and no HE.
+See the [Storage Pipes guide](STORAGE_PIPES.md#english) for filters and recovery.
+
+For indexed storage, place a Controller,
 then a Link in the chunk containing your inventories. Sneak-use the Controller with
 an empty hand, then bind the Link, Repeaters and Terminal. Each active Repeater covers
 one cardinally adjacent chunk in a connected chain. Open the Terminal to search,

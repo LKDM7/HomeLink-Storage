@@ -4,13 +4,23 @@ Date : 2026-10-02. Windows 11, Microsoft OpenJDK 21.0.11, Minecraft 1.21.1,
 NeoForge 21.1.251, HomeCore 1.13.0, HomeLink Energy 0.5.0.
 Version initiale Storage 1.3.0 ; livraison locale 1.4.0.
 
-JAR : `build/libs/homelink_storage-1.4.0.jar` (433780 octets).
-SHA-256 : `bdba8c6692a4afe63e4926c652655a359fcc6201975cc3907bcef858bd270ad6`.
+JAR : `build/libs/homelink_storage-1.4.0.jar` (444271 octets).
+SHA-256 : `a38824b454c09c0d6977de478fd896da55f140af1a77112e836ff57aefb78ae3`.
 `verifyReleaseJar` réussit ; aucune classe de fixture ni copie de HomeCore dans
-l'archive. La CI a été mise à jour localement ; aucune exécution distante ni
-publication n'a été déclenchée.
+l'archive. Ce rapport atteste les validations locales ; il ne certifie pas
+le statut de la CI distante ou une publication.
 
 ## État initial et méthode
+
+Préparation du push le 3 octobre 2026 : README, guides, recettes, inventaire des
+fichiers et matériaux mis à jour pour Storage 1.4.0. Les captures sélectionnées
+du client du 2 octobre sont conservées dans `docs/images/` pour être consultables
+depuis le dépôt. Le validateur est désormais versionné dans `scripts/` et appelé
+par la CI. Le contrôle des 4096 états réussit ;
+`gradlew.bat build test verifyReleaseJar --offline` réussit avec les 19 tests.
+Le JAR a été régénéré pour inclure la documentation des matériaux actualisée.
+Le client, les GameTests et la charge n'ont pas été relancés pour ces mises à jour
+de documentation. Le statut d'un futur lancement CI n'est pas attesté ici.
 
 Mise à jour de la demande : les pipes fonctionnent aussi sans Controller, à coût HE
 nul. La suite comporte désormais 36 GameTests : six scénarios supplémentaires
@@ -99,6 +109,59 @@ assertées dans une fenêtre 1280×960. La première vue utilise une petite fen�
 
 ## Corrections découvertes pendant les validations
 
+### Textures et raccords de contenants
+
+Métal opaque et verre translucide séparés par modèles composites NeoForge ;
+dimensions UV cohérentes avec les pièces ; faces intérieures/extérieures du verre
+légèrement espacées. Les colliers entre pipes et les raccords de contenants ont
+des conditions multipart exclusives. Les jonctions ont des arêtes continues,
+sans petits cubes de coin détachés. Le raccord comporte une bride graphite,
+un manchon cuivre et quatre boulons en relief ; son arrière rejoint les parois
+en retrait des coffres. La forme de sélection inclut la bride et le manchon.
+
+Commande exécutée : `gradlew.bat build runSmoke --offline -PsmokeLanguage=fr_fr`.
+Build, 19 tests unitaires et client FR réussis ; arrêt propre à 23:40:04.
+Assertions client : présence des couches solid/translucent et deux passes de
+rendu pour l'item, en plus de l'interface et des cargaisons réelles.
+Les fixtures ajoutent six raccordements à de vrais coffres/tonneaux, un par
+direction. Captures du raccord au coffre, des six montages, des jonctions et du
+transit inspectées dans `build/reports/pipes/connector-fr/`. Journal :
+`build/reports/pipes/connector-client-fr.log`. Aucun avertissement de texture
+ou de modèle manquant observé dans ce lancement.
+
+Contrôle des assets exécuté :
+`uv run --offline scripts/validate_pipe_models.py` (script initialement exécuté
+depuis `build/reports/pipes/check_connector_models.py`, puis conservé dans le dépôt).
+Les 4096 états, 15 modèles et 104 éléments sont vérifiés : choix de géométrie,
+collier/raccord exclusifs, couches de rendu, références, UV et épaisseur non nulle
+du verre. Résultat : `build/reports/pipes/connector-model-checks.txt`.
+Un dernier `gradlew.bat build --offline` réussit après correction d'un commentaire
+de dimensions ; JAR inchangé. Les GameTests, l'intermod et la charge restent les
+résultats des passages précédents. Ces captures ne valident pas toute la matrice
+manuelle ci-dessous, notamment l'eau, le faible éclairage et tous les objets.
+
+### Révision du modèle octogonal
+
+Après choix de la section octogonale : tubes droits continus, deux renforts fins,
+colliers graphite/cuivre, textures RGBA propres au mod, indicateurs près des colliers
+et formes de sélection biseautées. Le contrôle des conditions multipart couvre les
+4096 états, les références des matériaux et les bornes des éléments.
+
+Commande finale exécutée : `gradlew.bat build runSmoke --offline -PsmokeLanguage=fr_fr`.
+Build, 19 tests et client FR réussis à 23:07:57. Le client capture des cargaisons
+réelles, des angles, un T, un croisement et une montée verticale. Images inspectées
+dans `build/reports/pipes/octagonal-fr/`, journal `octagonal-client-fr.log`.
+Les anciennes images FR/EN et les résultats GameTests restent ceux de leurs
+validations précédentes ; les GameTests et le benchmark n'ont pas été relancés
+pour cette révision visuelle.
+
+Le premier build a été interrompu après diagnostic d'un calcul de collision trop
+coûteux au chargement de tous les états. La correction calcule les formes à la
+demande, partage les géométries identiques et optimise leur union une seule fois.
+Les builds et clients suivants démarrent et réussissent.
+
+### Corrections précédentes
+
 - Ancienne assertion HomeCore à cinq métriques adaptée au schéma stable à seize.
 - Fixture client corrigée pour ouvrir la bonne face et initialiser ses connexions.
 - Compteur de sélection raccourci pour éviter le chevauchement des contrôles.
@@ -111,7 +174,7 @@ assertées dans une fenêtre 1280×960. La première vue utilise une petite fen�
 
 La matrice exhaustive demandée n'est pas entièrement automatisée. Restent notamment :
 
-- inspection des six vues, angles/T/croisements, plafond et verticales ; outils,
+- inspection complète des six vues et des montages au plafond ; outils,
   boucliers/shulkers enchantés, transparence devant eau/verre et faible éclairage ;
 - deux vrais clients simultanés, révocation en direct, entrée en zone en plein
   trajet, trafic réseau mesuré et performances de rendu ;

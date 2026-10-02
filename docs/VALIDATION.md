@@ -1,5 +1,10 @@
 # Validation exécutée
 
+La validation actuelle des Storage Pipes 1.4.0 (tests logiques, GameTests,
+persistance, intermods et captures client) est détaillée dans
+[PIPES_VALIDATION.md](PIPES_VALIDATION.md). Les sections ci-dessous conservent
+les résultats historiques des fonctionnalités Storage et leurs versions d'origine.
+
 ## Version 1.0.0 initiale — 19 septembre 2026
 
 Les huit phases initiales ont été compilées et exécutées dans le vrai runtime Minecraft.

@@ -5,6 +5,19 @@ Inclus dans le JAR Storage : aucun Router, module ni mod Logistics supplémentai
 
 ## Français
 
+Le tube présente une section octogonale en verre clair, avec de petits colliers
+graphite/cuivre. Le verre reste continu sur les lignes droites ; les angles et
+embranchements ont une petite chambre de jonction et les contenants un raccord
+métallique ouvert : bride graphite, manchon de verrouillage cuivre et quatre
+boulons en relief. Le raccord rejoint aussi les parois en retrait des coffres.
+Le métal opaque et le verre translucide sont rendus sur des couches distinctes.
+Les voyants sont de fines bandes encastrées. Les modèles natifs
+se régénèrent avec `scripts/generate_pipe_models.py` (Python 3).
+
+![Raccord sur un coffre dans le client sans shader](images/storage-pipe-connector.png)
+
+[Capture de cargaisons réelles en transit](images/storage-pipe-transit.png).
+
 ### Montage
 
 ```text
@@ -42,7 +55,8 @@ Les sens sont toujours vus du contenant :
 
 Le bouton bascule entre les deux sens. Une machine à sens unique désactive le
 choix interdit. Pour un inventaire générique, les restrictions sont testées par
-objet et emplacement. L'écran montre le Controller, le statut et les refus.
+objet et emplacement. L'écran montre le Controller gestionnaire ou « Mode autonome »,
+le statut et les refus.
 Un autre joueur ayant enregistré la même face provoque un conflit de révision :
 le brouillon reste visible, à relire avant de l'appliquer à nouveau.
 
@@ -102,11 +116,19 @@ fournissent pas d'ACL universelle : aucune garantie globale pour les mods de cla
 
 V1 : pas de waterlogging, pas de déplacement par piston, pas de fluides ou d'énergie
 dans les tuyaux, pas de transport interdimensionnel. Les textures utilisent les
-matériaux vanilla verre teinté gris clair, deepslate poli et cuivre : aucun pack
+trois matériaux propres au mod : verre translucide, graphite et cuivre : aucun pack
 ni shader requis. Les contrôles serveur sont documentés dans
 [l'architecture](STORAGE_PIPES_ARCHITECTURE.md) ; voir aussi [la validation](PIPES_VALIDATION.md).
 
 ## English
+
+The tube has an octagonal glass section with slim graphite/copper collars. Straight
+runs use continuous glass; elbows and branches have small inspection chambers and
+open flanges at containers. Container sockets have a graphite mounting plate,
+copper locking sleeve and four raised bolts; their rear reaches recessed chest
+walls. Opaque metal and translucent glass use separate render layers.
+Recessed indicator strips show the transport status.
+Native model sources can be regenerated with `scripts/generate_pipe_models.py`.
 
 ### Setup
 

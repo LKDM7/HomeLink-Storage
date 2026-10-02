@@ -20,6 +20,11 @@
 - `client/rendering/LocateRenderer.java`, `StorageTheme.java`
 - `client/screen/StorageScreen.java`
 - `client/widget/StorageButton.java`, `StorageManualView.java`
+- `logistics/pipe/StoragePipeBlock.java`, `StoragePipeBlockEntity.java`
+- `logistics/network/PipeNetworkManager.java`
+- `logistics/transit/TransitLedger.java`, `TransitPacket.java`
+- `logistics/filter`, `logistics/sync`
+- `client/logistics/PipeScreen.java`, `ItemCatalog.java`, `PipeRenderer.java`
 
 Tous les chemins abrégés après le premier sont relatifs à
 `src/main/java/fr/lkdm/homelink/storage`.
@@ -28,13 +33,17 @@ Tous les chemins abrégés après le premier sont relatifs à
 
 - metadata : `src/main/templates/META-INF/neoforge.mods.toml`
 - langues : `assets/homelink_storage/lang/en_us.json`, `fr_fr.json`
-- modèles/blocstates : Controller, Terminal, Link et Repeater
+- modèles/blockstates : Controller, Terminal, Link, Repeater, Deposit, Overflow et Pipe
 - matériaux : `assets/homelink_storage/MATERIALS.md`
-- recettes et déblocages : Controller, Terminal, Link et Repeater
-- loot tables : les quatre blocs
+- recettes et déblocages : les sept blocs et la clé USB
+- loot tables : les sept blocs
+- textures des pipes : `assets/homelink_storage/textures/block/pipe_{glass,graphite,copper}.png`
+- enfants métal/verre et raccords : `assets/homelink_storage/models/block/storage_pipe*.json`
 - tag de minage : `data/minecraft/tags/block/mineable/pickaxe.json`
 
 Les chemins de ressources abrégés sont relatifs à `src/main/resources`.
+`scripts/generate_pipe_models.py` régénère les assets des pipes ;
+`scripts/validate_pipe_models.py` contrôle leurs références et les 4096 états.
 
 ## Vérification
 
@@ -50,6 +59,11 @@ qui pilote le vrai écran HomeLink Dashboard avec les trois mods chargés ensemb
 `TerminalMountChecks` vérifie le Terminal mural et sur pied ; son modèle mural est
 `assets/homelink_storage/models/block/storage_terminal_wall.json`.
 
+`PipeClientChecks` couvre les vrais payloads, le catalogue, les échelles GUI,
+les cargaisons visibles, les deux couches de rendu et les montages sur six faces.
+Les tests logiques sont dans `src/test` ; les GameTests et reprises du ledger
+restent dans `src/verification`. Captures sélectionnées : `docs/images/`.
+
 ## Documentation
 
 - `README.md`
@@ -58,4 +72,8 @@ qui pilote le vrai écran HomeLink Dashboard avec les trois mods chargés ensemb
 - `docs/DEVELOPMENT.md`
 - `docs/HOMECORE.md`
 - `docs/VALIDATION.md`
+- `docs/STORAGE_PIPES.md`
+- `docs/STORAGE_PIPES_ARCHITECTURE.md`
+- `docs/PIPES_VALIDATION.md`
+- `CHANGELOG.md`
 - `LICENSE`

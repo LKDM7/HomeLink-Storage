@@ -34,6 +34,7 @@ import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -51,13 +52,15 @@ public final class StoragePipeBlock extends BaseEntityBlock {
         for (Direction direction : Direction.values())
             SIDES.put(direction, EnumProperty.create(direction.getSerializedName(), PipeConnection.class));
     }
-    /** Glass body 7/16 wide, copper connectors 8/16 at containers and Controllers. */
-    public static final double CORE_MIN = 4.5, CORE_MAX = 11.5, ARM_MIN = 5, ARM_MAX = 11, COLLAR_MIN = 4, COLLAR_MAX = 12;
+    /** Glass body 7/16 wide; container sockets add an open 10.5/16 mounting flange. */
+    public static final double CORE_MIN = 4.5, CORE_MAX = 11.5, ARM_MIN = 4.5, ARM_MAX = 11.5, COLLAR_MIN = 3.6, COLLAR_MAX = 12.4;
     private static final VoxelShape CORE = Block.box(CORE_MIN, CORE_MIN, CORE_MIN, CORE_MAX, CORE_MAX, CORE_MAX);
-    private static final Map<BlockState, VoxelShape> SHAPES = new ConcurrentHashMap<>();
+    private static final Map<Integer, VoxelShape> SHAPES = new ConcurrentHashMap<>();
 
     public StoragePipeBlock(Properties properties) {
-        super(properties);
+        // Six four-valued sides produce 4096 states. Bake only geometry actually used,
+        // rather than building every bevel combination during registry initialization.
+        super(properties.dynamicShape());
         BlockState state = stateDefinition.any();
         for (var property : SIDES.values()) state = state.setValue(property, PipeConnection.NONE);
         registerDefaultState(state);
@@ -169,28 +172,63 @@ public final class StoragePipeBlock extends BaseEntityBlock {
     }
 
     @Override protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPES.computeIfAbsent(state, StoragePipeBlock::shape);
-    }
-
-    private static VoxelShape shape(BlockState state) {
-        VoxelShape shape = CORE;
+        int key = 0;
         for (Direction direction : Direction.values()) {
             PipeConnection connection = side(state, direction);
             if (connection == PipeConnection.NONE) continue;
-            shape = Shapes.or(shape, box(direction, ARM_MIN, ARM_MAX, 0, CORE_MIN));
-            if (connection != PipeConnection.PIPE) shape = Shapes.or(shape, box(direction, COLLAR_MIN, COLLAR_MAX, 0, 1.5));
+            key |= 1 << direction.get3DDataValue();
+            if (connection != PipeConnection.PIPE) key |= 1 << (direction.get3DDataValue() + 6);
+        }
+        return SHAPES.computeIfAbsent(key, ignored -> shape(state));
+    }
+
+    private static VoxelShape shape(BlockState state) {
+        boolean straight = straightAxis(state) != null;
+        VoxelShape shape = straight ? Shapes.empty() : CORE;
+        for (Direction direction : Direction.values()) {
+            PipeConnection connection = side(state, direction);
+            if (connection == PipeConnection.NONE) continue;
+            shape = Shapes.joinUnoptimized(shape, octagon(direction, ARM_MIN, ARM_MAX, 0, straight ? 8 : CORE_MIN), BooleanOp.OR);
+            if (connection != PipeConnection.PIPE) {
+                shape = Shapes.joinUnoptimized(shape, octagon(direction, COLLAR_MIN, COLLAR_MAX, 0.85, 3.25), BooleanOp.OR);
+                shape = Shapes.joinUnoptimized(shape, crossBox(direction, 2.75, 13.25, 2.75, 13.25, -1.025, 1.35), BooleanOp.OR);
+            }
         }
         return shape.optimize();
     }
 
-    /** Box spanning [low, high] across the side and [from, to] pixels inward from that side's face. */
-    private static VoxelShape box(Direction direction, double low, double high, double from, double to) {
+    /** Axis of an uninterrupted straight model, or null for an end or junction. */
+    public static @Nullable Direction.Axis straightAxis(BlockState state) {
+        Direction.Axis axis = null;
+        int count = 0;
+        for (Direction direction : Direction.values()) {
+            if (side(state, direction) == PipeConnection.NONE) continue;
+            if (axis != null && axis != direction.getAxis()) return null;
+            axis = direction.getAxis();
+            count++;
+        }
+        return count == 2 ? axis : null;
+    }
+
+    /** Stepped approximation of the bevels, so selection follows the octagonal tube. */
+    private static VoxelShape octagon(Direction direction, double low, double high, double from, double to) {
+        VoxelShape result = Shapes.empty();
+        for (int strip = 0; strip < 4; strip++) {
+            double offset = strip * 0.5;
+            double inset = 2 - offset - 0.25;
+            result = Shapes.joinUnoptimized(result, crossBox(direction, low + inset, high - inset, low + offset, low + offset + 0.5, from, to), BooleanOp.OR);
+            result = Shapes.joinUnoptimized(result, crossBox(direction, low + inset, high - inset, high - offset - 0.5, high - offset, from, to), BooleanOp.OR);
+        }
+        return Shapes.joinUnoptimized(result, crossBox(direction, low, high, low + 2, high - 2, from, to), BooleanOp.OR);
+    }
+
+    private static VoxelShape crossBox(Direction direction, double u0, double u1, double v0, double v1, double from, double to) {
         double near = direction.getAxisDirection() == Direction.AxisDirection.POSITIVE ? 16 - to : from;
         double far = direction.getAxisDirection() == Direction.AxisDirection.POSITIVE ? 16 - from : to;
         return switch (direction.getAxis()) {
-            case X -> Block.box(near, low, low, far, high, high);
-            case Y -> Block.box(low, near, low, high, far, high);
-            case Z -> Block.box(low, low, near, high, high, far);
+            case X -> Block.box(near, u0, v0, far, u1, v1);
+            case Y -> Block.box(u0, near, v0, u1, far, v1);
+            case Z -> Block.box(u0, v0, near, u1, v1, far);
         };
     }
 

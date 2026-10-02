@@ -1,0 +1,15 @@
+{
+  "parent": "minecraft:block/block",
+  "render_type": "minecraft:solid",
+  "ambientocclusion": false,
+  "textures": {
+    "particle": "homelink_storage:block/pipe_graphite",
+    "glass": "homelink_storage:block/pipe_glass",
+    "frame": "homelink_storage:block/pipe_graphite",
+    "copper": "homelink_storage:block/pipe_copper",
+    "recess": "homelink_storage:block/pipe_graphite"
+  },
+  "elements": [
+    {"from": [7.1, 7.1, 4.5], "to": [8.9, 8.9, 4.7], "faces": {"north": {"uv": [7.1, 7.1, 8.9, 8.9], "texture": "#recess"}, "east": {"uv": [7.9, 7.1, 8.1, 8.9], "texture": "#recess"}, "south": {"uv": [7.1, 7.1, 8.9, 8.9], "texture": "#recess"}, "west": {"uv": [7.9, 7.1, 8.1, 8.9], "texture": "#recess"}, "up": {"uv": [7.1, 7.9, 8.9, 8.1], "texture": "#recess"}, "down": {"uv": [7.1, 7.9, 8.9, 8.1], "texture": "#recess"}}}
+  ]
+}

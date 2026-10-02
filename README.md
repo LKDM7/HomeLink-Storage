@@ -17,17 +17,27 @@ mod; no extra Router or Logistics JAR.
 
 Minecraft 1.21.1 · NeoForge 21.1.251 · Java 21.
 
+Les tuyaux ont une section octogonale en verre, des colliers graphite/cuivre et
+un raccord 3D à bride et quatre boulons au contact des contenants.
+
+![Raccord du tuyau de stockage sur un coffre, capture du client sans shader](docs/images/storage-pipe-connector.png)
+
+[Voir des cargaisons pendant leur trajet réel](docs/images/storage-pipe-transit.png).
+
 HomeLink Storage connecte, indexe, recherche, localise et surveille de vrais
 inventaires Minecraft. Chaque bloc a un rôle distinct :
 
 - **Terminal** : seul bloc qui affiche les objets et permet de les retirer ;
-- **Controller** : son écran gère le réseau (nom, inventaires, zones, oubli des
-  inventaires hors ligne, actualisation), sans liste d’objets ni retrait ;
+- **Controller** : son écran principal gère le réseau (nom, inventaires, zones,
+  oubli des inventaires hors ligne, actualisation) ; sa vue Pipes supervise
+  les circuits et permet la récupération des cargaisons bloquées ;
 - **Link** (Connecteur) et **Repeater** : pas d’écran, un clic droit affiche leur état
   et dessine pendant 30 s leur zone d’action (leur chunk) et celles du reste du réseau ;
 - **Deposit** : écran limité à ses 27 emplacements d’entrée ;
 - **Coffre de débordement** : reçoit après 5 s les objets qu’aucun coffre ne contient
   encore ; ce qui ne peut aller nulle part reste « en attente » et se reprend depuis le Terminal.
+- **Storage Pipe** : transporte des objets entre contenants physiquement reliés,
+  avec sens et filtre indépendants sur chaque face.
 
 ## Installation et prise en main
 
@@ -35,8 +45,26 @@ Le [Storage Deposit](docs/STORAGE_DEPOSIT.md) ajoute un coffre d'entrée de 27 s
 une stack par seconde est rangée dans un inventaire connecté contenant déjà la même
 variante. Il se relie au Controller avec la clé USB de liaison existante.
 
-Installer `homelink_storage-1.3.0.jar`, `homecore-1.13.0.jar` et `homelink_energy-0.5.0.jar` dans le dossier
+Installer `homelink_storage-1.4.0.jar`, `homecore-1.13.0.jar` et `homelink_energy-0.5.0.jar` dans le dossier
 `mods` du client et du serveur NeoForge.
+
+### Transport par tuyaux
+
+1. Fabriquer 8 Storage Pipes avec 6 lingots de cuivre, 2 blocs de verre et 1 redstone.
+2. Poser une conduite continue entre deux contenants compatibles ; les raccords
+   apparaissent automatiquement, sans outil de liaison.
+3. Cliquer à main vide sur le raccord source, choisir **SORTIE : COFFRE → TUYAU**,
+   puis appliquer. Sur la destination, choisir **ENTRÉE : TUYAU → COFFRE**, puis appliquer.
+4. Configurer éventuellement les filtres : BLACKLIST vide autorise tout,
+   WHITELIST vide bloque tout. Les filtres des deux raccords s'appliquent.
+
+En mode autonome, les deux raccords doivent être validés par le même propriétaire.
+Le Controller est optionnel et aucun HE n'est consommé sans lui. Par défaut, un
+départ transporte jusqu'à 16 objets toutes les 20 ticks, avec 8 ticks de trajet
+par segment ; les objets arrivent après le voyage visible dans le verre.
+Un coffre relié par pipe n'entre pas automatiquement dans l'index des Links.
+
+### Stockage indexé et Terminal
 
 1. Placer un Storage Controller.
 2. Placer un Storage Link dans le chunk à couvrir : il découvre les inventaires
@@ -89,6 +117,7 @@ uniquement au travers de HomeCore.
 ## Vérification
 
 ```powershell
+.\gradlew.bat build test
 .\gradlew.bat runSmoke -PsmokeLanguage=fr_fr
 .\gradlew.bat runSmoke -PwithDashboard -PsmokeLanguage=fr_fr --no-configuration-cache
 .\gradlew.bat runSmoke -PwithJei -PsmokeLanguage=fr_fr
@@ -100,9 +129,13 @@ uniquement au travers de HomeCore.
 scénarios, prend des captures puis ferme le jeu. Les tests de persistance utilisent
 deux processus serveur et le même monde. Les validations sont exclues du JAR distribué.
 
-Les quatre blocs possèdent des géométries 3D distinctes, construites avec des matériaux
-vanilla pour rester compatibles avec les packs de ressources. Les inventaires moddées
-passent par la capability standard NeoForge ; chaque mod tiers n’a pas été testé
+Les appareils de stockage possèdent des géométries 3D distinctes, construites avec
+des matériaux vanilla pour rester compatibles avec les packs de ressources. Les Storage Pipes
+disposent de leurs propres textures de verre, graphite et cuivre, avec une section
+octogonale et des colliers fins. Un raccord 3D à bride, manchon cuivre et quatre
+boulons apparaît au contact d'un contenant. Le métal opaque et le verre translucide
+utilisent des couches de rendu séparées. Les inventaires moddés passent par la capability
+standard NeoForge ; chaque mod tiers n’a pas été testé
 individuellement. Le test optionnel Dashboard utilise le vrai checkout voisin
 `../HomeLink` (configurable avec `-Pdashboard_dir`).
 

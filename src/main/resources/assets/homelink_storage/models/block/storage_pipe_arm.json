@@ -1,23 +1,22 @@
 {
   "parent": "minecraft:block/block",
-  "render_type": "minecraft:translucent",
+  "loader": "neoforge:composite",
   "ambientocclusion": false,
   "textures": {
-    "particle": "minecraft:block/copper_block",
-    "glass": "minecraft:block/light_gray_stained_glass",
-    "frame": "minecraft:block/polished_deepslate",
-    "copper": "minecraft:block/copper_block"
+    "particle": "homelink_storage:block/pipe_graphite"
   },
-  "elements": [
-    {"from": [5, 5, 0], "to": [11, 11, 4.5], "faces": {
-      "east": {"uv": [0, 5, 4.5, 11], "texture": "#glass"}, "west": {"uv": [0, 5, 4.5, 11], "texture": "#glass"},
-      "up": {"uv": [5, 0, 11, 4.5], "texture": "#glass"}, "down": {"uv": [5, 0, 11, 4.5], "texture": "#glass"}}},
-    {"from": [4.7, 4.7, 0], "to": [5.3, 5.3, 4.5], "faces": {"east": {"texture": "#frame"}, "west": {"texture": "#frame"}, "up": {"texture": "#frame"}, "down": {"texture": "#frame"}}},
-    {"from": [10.7, 4.7, 0], "to": [11.3, 5.3, 4.5], "faces": {"east": {"texture": "#frame"}, "west": {"texture": "#frame"}, "up": {"texture": "#frame"}, "down": {"texture": "#frame"}}},
-    {"from": [4.7, 10.7, 0], "to": [5.3, 11.3, 4.5], "faces": {"east": {"texture": "#frame"}, "west": {"texture": "#frame"}, "up": {"texture": "#frame"}, "down": {"texture": "#frame"}}},
-    {"from": [10.7, 10.7, 0], "to": [11.3, 11.3, 4.5], "faces": {"east": {"texture": "#frame"}, "west": {"texture": "#frame"}, "up": {"texture": "#frame"}, "down": {"texture": "#frame"}}},
-    {"from": [4.4, 4.4, 3.4], "to": [11.6, 11.6, 4.3], "faces": {
-      "east": {"uv": [3.4, 4.4, 4.3, 11.6], "texture": "#copper"}, "west": {"uv": [3.4, 4.4, 4.3, 11.6], "texture": "#copper"},
-      "up": {"uv": [4.4, 3.4, 11.6, 4.3], "texture": "#copper"}, "down": {"uv": [4.4, 3.4, 11.6, 4.3], "texture": "#copper"}}}
+  "children": {
+    "metal": {
+      "parent": "homelink_storage:block/storage_pipe_arm_metal",
+      "render_type": "minecraft:solid"
+    },
+    "glass": {
+      "parent": "homelink_storage:block/storage_pipe_arm_glass",
+      "render_type": "minecraft:translucent"
+    }
+  },
+  "item_render_order": [
+    "metal",
+    "glass"
   ]
 }
