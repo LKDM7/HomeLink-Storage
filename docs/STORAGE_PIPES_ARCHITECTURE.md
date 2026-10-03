@@ -136,6 +136,9 @@ faces. Cargo movement and server routing do not depend on the visual model.
 
 ## References checked
 
+The current GUI uses HomeCore 1.14.0 / public API 1.9.0 through the shared client UI kit;
+see [UI migration](UI_MIGRATION.md). The references below record the original Pipes audit.
+
 - Local resolved HomeCore 1.13.0: ItemApi, ItemPort, ItemPortType, EnergyBuffer,
   NetworkMember, PermissionValidator, DashboardDevice, DeviceMetric.
 - Local NeoForge 21.1.251 sources: CompositeModel loader, chunk render-layer union

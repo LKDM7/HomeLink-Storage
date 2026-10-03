@@ -2,7 +2,7 @@
 
 ## Contrat actuel
 
-Storage 1.4.0 demande HomeCore **1.13.0**, API **1.8.0**, avec la plage `[1.13.0,2.0.0)`. La version exacte est déclarée dans `gradle.properties` ; un composite local utilise un checkout de même version et ne nécessite pas Maven local.
+Storage 1.4.0 demande HomeCore **1.14.0**, API **1.9.0**, avec la plage `[1.14.0,2.0.0)`. La version exacte est déclarée dans `gradle.properties` ; un composite local utilise un checkout de même version et ne nécessite pas Maven local.
 
 Le Controller implémente `NetworkMember` et les demandes de liaison passent par `DashboardAPI.bindDevice()`. HomeCore applique les permissions sur le réseau quitté et le réseau rejoint. Le Storage Deposit expose `ItemApi.BLOCK` de type `INPUT` sur ses faces d’entrée ; les transferts FarmBot et Quarry utilisent ce même contrat. La liaison interne des composants Storage au Controller reste une fonction de la clé Storage.
 

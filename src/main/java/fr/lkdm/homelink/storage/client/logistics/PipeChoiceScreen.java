@@ -1,7 +1,10 @@
 package fr.lkdm.homelink.storage.client.logistics;
 
-import fr.lkdm.homelink.storage.client.rendering.StorageTheme;
-import fr.lkdm.homelink.storage.client.widget.StorageButton;
+import fr.lkdm.homecore.api.client.ui.HomeLinkTheme;
+import fr.lkdm.homecore.api.client.ui.HomeLinkUi;
+import fr.lkdm.homecore.api.client.ui.HomeLinkButton;
+import fr.lkdm.homecore.api.client.ui.HomeLinkScreenLayout;
+
 import fr.lkdm.homelink.storage.logistics.sync.PipePayloads;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
@@ -29,10 +32,11 @@ public final class PipeChoiceScreen extends Screen {
 
     @Override protected void init() {
         var faces = data.getList("Faces", Tag.TAG_COMPOUND);
-        frameWidth = Math.min(240, width - 8);
-        frameHeight = 46 + faces.size() * 22 + 26;
-        left = (width - frameWidth) / 2;
-        top = Math.max(4, (height - frameHeight) / 2);
+        var layout = HomeLinkScreenLayout.fit(width, height, 240, 46 + faces.size() * 22 + 26);
+        frameWidth = layout.width();
+        frameHeight = layout.height();
+        left = layout.x();
+        top = layout.y();
         for (int i = 0; i < faces.size(); i++) {
             CompoundTag face = faces.getCompound(i);
             Direction side = Direction.from3DDataValue(face.getByte("Face"));
@@ -42,23 +46,23 @@ public final class PipeChoiceScreen extends Screen {
                 name = id == null ? "?" : BuiltInRegistries.BLOCK.get(id).getName().getString();
             }
             Component label = Component.translatable("direction.homelink_storage." + side.getSerializedName()).append(" — ").append(name);
-            var button = StorageButton.builder(label, ignored -> PacketDistributor.sendToServer(
-                    new PipePayloads.OpenFace(pos, (byte) side.get3DDataValue()))).bounds(left + 10, top + 38 + i * 22, frameWidth - 20, 18).build();
+            var button = HomeLinkButton.builder(label, ignored -> PacketDistributor.sendToServer(
+                    new PipePayloads.OpenFace(pos, (byte) side.get3DDataValue()))).bounds(left + 10, top + 38 + i * 22, frameWidth - 20, HomeLinkTheme.CONTROL_HEIGHT).build();
             button.setTooltip(Tooltip.create(label));
             addRenderableWidget(button);
         }
-        addRenderableWidget(StorageButton.builder(Component.translatable("screen.homelink_storage.close"), ignored -> onClose())
-                .bounds(left + frameWidth - 90, top + frameHeight - 24, 80, 18).build());
+        addRenderableWidget(HomeLinkButton.builder(Component.translatable("screen.homelink_storage.close"), ignored -> onClose())
+                .bounds(left + frameWidth - 90, top + frameHeight - 24, 80, HomeLinkTheme.CONTROL_HEIGHT).build());
     }
 
     @Override public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.renderBackground(graphics, mouseX, mouseY, partialTick);
-        StorageTheme.frame(graphics, left, top, frameWidth, frameHeight);
+        HomeLinkUi.frame(graphics, left, top, frameWidth, frameHeight);
     }
 
     @Override public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
-        graphics.drawString(font, font.plainSubstrByWidth(title.getString(), frameWidth - 24), left + 12, top + 11, StorageTheme.TEXT, false);
+        graphics.drawString(font, font.plainSubstrByWidth(title.getString(), frameWidth - 24), left + 12, top + 11, HomeLinkTheme.TEXT, false);
     }
 
     @Override public boolean isPauseScreen() { return false; }

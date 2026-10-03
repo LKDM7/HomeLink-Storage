@@ -1,8 +1,12 @@
 package fr.lkdm.homelink.storage.client.screen;
 
+import fr.lkdm.homecore.api.client.ui.HomeLinkTheme;
+import fr.lkdm.homecore.api.client.ui.HomeLinkUi;
+import fr.lkdm.homecore.api.client.ui.HomeLinkButton;
+import fr.lkdm.homecore.api.client.ui.HomeLinkScreenLayout;
+import fr.lkdm.homelink.storage.client.rendering.StorageStatusColors;
+
 import fr.lkdm.homelink.storage.client.recipe.RecipeViewerBridge;
-import fr.lkdm.homelink.storage.client.rendering.StorageTheme;
-import fr.lkdm.homelink.storage.client.widget.StorageButton;
 import fr.lkdm.homelink.storage.client.widget.StorageManualView;
 import fr.lkdm.homelink.storage.menu.StorageMenu;
 import fr.lkdm.homelink.storage.network.StorageData;
@@ -69,8 +73,8 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
     }
 
     private Button button(String key, int x, int y, int width, Runnable action) {
-        Button control = addRenderableWidget(StorageButton.builder(text(key), button -> action.run())
-                .bounds(leftPos + x, topPos + y, width, 18).build());
+        Button control = addRenderableWidget(HomeLinkButton.builder(text(key), button -> action.run())
+                .bounds(leftPos + x, topPos + y, width, HomeLinkTheme.CONTROL_HEIGHT).build());
         control.setTooltip(Tooltip.create(text(key)));
         return control;
     }
@@ -80,65 +84,74 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
     public void toggleManual() { manualOpen = !manualOpen; rebuildWidgets(); }
 
     private EditBox input(EditBox edit) {
-        edit.setTextColor(StorageTheme.TEXT);
-        edit.setTextColorUneditable(StorageTheme.MUTED);
-        return addRenderableWidget(edit);
+        return addRenderableWidget(HomeLinkUi.input(edit));
     }
 
+    private int rightX() { return imageWidth / 2 + 8; }
+    private int rightWidth() { return imageWidth - rightX() - 12; }
+    private int listWidth() { return rightX() - 18; }
+    private int listEnd() { return 10 + listWidth(); }
+
+    private String clip(Component value, int width) { return HomeLinkUi.clip(font, value.getString(), width); }
+
     @Override protected void init() {
+        imageWidth = HomeLinkScreenLayout.fit(width, height, 380, 220).width();
         super.init();
         String query = search == null ? "" : search.getValue();
         var help = button("manual", imageWidth - 34, 6, 20, this::toggleManual);
-        ((StorageButton) help).selected(manualOpen);
+        ((HomeLinkButton) help).selected(manualOpen);
         help.setTooltip(Tooltip.create(Component.translatable("manual.homelink_storage.title")));
         if (manualOpen) {
             if (manual == null) manual = new StorageManualView(font);
             manual.init(leftPos + 10, topPos + 44, imageWidth - 20, imageHeight - 77,
                     this::addRenderableWidget, this::rebuildWidgets);
-            button("manual_back", 10, 194, 180, this::toggleManual);
-            button("close", 198, 194, 170, this::onClose);
+            button("manual_back", 10, 194, listWidth(), this::toggleManual);
+            button("close", rightX(), 194, rightWidth(), this::onClose);
             return;
         }
         if (management) {
             // Controller: network management only, no item list and no withdrawal.
             String draftController = controllerName == null ? menu.clientName() : controllerName.getValue();
-            controllerName = input(new EditBox(font, leftPos + 10, topPos + 42, 278, 18, text("controller_name")));
+            controllerName = input(new EditBox(font, leftPos + 10, topPos + 42, imageWidth - 102, 18, text("controller_name")));
             controllerName.setMaxLength(64);
             controllerName.setHint(text("controller_name"));
             controllerName.setValue(draftController);
-            button("rename_controller", 292, 42, 76, () -> menu.send("rename_controller", "", controllerName.getValue()));
+            button("rename_controller", imageWidth - 88, 42, 76, () -> menu.send("rename_controller", "", controllerName.getValue()));
             String draftName = name == null ? selectedLocation == null ? "" : selectedLocation.name() : name.getValue();
             String draftZone = zoneName == null ? "" : zoneName.getValue();
-            name = input(new EditBox(font, leftPos + 198, topPos + 74, 170, 18, text("name")));
+            name = input(new EditBox(font, leftPos + rightX(), topPos + 74, rightWidth(), 18, text("name")));
             name.setMaxLength(64);
             name.setHint(text("name"));
             name.setValue(draftName);
-            button("rename_inventory", 198, 96, 170, () -> {
+            button("rename_inventory", rightX(), 96, rightWidth(), () -> {
                 if (selectedLocation != null) menu.send("rename_inventory", selectedLocation.linkId().toString(), name.getValue());
             });
-            button("assign_zone", 198, 118, 170, () -> {
+            button("assign_zone", rightX(), 118, rightWidth(), () -> {
                 assignmentZone = cycleZone(assignmentZone, false);
                 if (selectedLocation != null && !assignmentZone.isEmpty())
                     menu.send("set_zone", selectedLocation.linkId().toString(), assignmentZone);
             });
-            zoneName = input(new EditBox(font, leftPos + 198, topPos + 146, 170, 18, text("new_zone")));
+            zoneName = input(new EditBox(font, leftPos + rightX(), topPos + 146, rightWidth(), 18, text("new_zone")));
             zoneName.setMaxLength(48);
             zoneName.setHint(text("new_zone"));
             zoneName.setValue(draftZone);
-            button("create_zone", 198, 168, 170, () -> menu.send("create_zone", "", zoneName.getValue()));
-            button("forget_offline", 198, 194, 170, () -> {
+            button("create_zone", rightX(), 168, rightWidth(), () -> menu.send("create_zone", "", zoneName.getValue()));
+            button("forget_offline", rightX(), 194, rightWidth(), () -> {
                 if (selectedLocation != null) menu.send("forget_inventory", selectedLocation.linkId().toString(), "");
             });
-            button("refresh", 10, 194, 56, () -> menu.send("refresh", "", ""));
+            int refreshWidth = listWidth() * 56 / 180;
+            int pipesWidth = listWidth() * 58 / 180;
+            button("refresh", 10, 194, refreshWidth, () -> menu.send("refresh", "", ""));
             // Pipes / recovery view of this Controller, answered by the server after its own checks.
-            button("pipes", 70, 194, 58, () -> net.neoforged.neoforge.network.PacketDistributor.sendToServer(
+            button("pipes", 14 + refreshWidth, 194, pipesWidth, () -> net.neoforged.neoforge.network.PacketDistributor.sendToServer(
                     new fr.lkdm.homelink.storage.logistics.sync.PipePayloads.RecoveryAction(menu.position(), "open", "")));
-            button("close", 132, 194, 58, this::onClose);
+            button("close", 18 + refreshWidth + pipesWidth, 194,
+                    listWidth() - refreshWidth - pipesWidth - 8, this::onClose);
         } else {
             // Terminal: find and take items; configuration lives on the Controller.
             boolean viewer = RecipeViewerBridge.available();
             if (search == null && RecipeViewerBridge.synchronizedSearch()) query = RecipeViewerBridge.viewerSearch();
-            search = input(new EditBox(font, leftPos + 10, topPos + 42, viewer ? 336 : 358, 18, text("search")));
+            search = input(new EditBox(font, leftPos + 10, topPos + 42, imageWidth - (viewer ? 44 : 22), 18, text("search")));
             search.setMaxLength(128);
             search.setHint(text("search"));
             search.setValue(query);
@@ -147,7 +160,7 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
                 if (RecipeViewerBridge.synchronizedSearch()) RecipeViewerBridge.pushSearch(value);
             });
             if (viewer) {
-                var sync = (StorageButton) button("recipe_sync", 350, 42, 18, () -> {
+                var sync = (HomeLinkButton) button("recipe_sync", imageWidth - 30, 42, 18, () -> {
                     RecipeViewerBridge.setSynchronizedSearch(!RecipeViewerBridge.synchronizedSearch());
                     if (RecipeViewerBridge.synchronizedSearch()) RecipeViewerBridge.pushSearch(search.getValue());
                     rebuildWidgets();
@@ -156,23 +169,30 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
                 sync.setMessage(Component.literal("⇄"));
                 sync.setTooltip(Tooltip.create(text(RecipeViewerBridge.synchronizedSearch() ? "recipe_sync_on" : "recipe_sync_off")));
             }
-            ((StorageButton) button(byCount ? "sort_count" : "sort_name", 10, 64, 88, () -> { byCount = !byCount; dirty = true; rebuildWidgets(); })).selected(byCount);
-            ((StorageButton) button(variants ? "variants" : "aggregate", 102, 64, 88, () -> { variants = !variants; dirty = true; rebuildWidgets(); })).selected(variants);
-            var zoneButton = addRenderableWidget(StorageButton.builder(zone.isEmpty() ? text("all_zones") : Component.literal(zoneLabel(zone)), button -> {
+            int filterWidth = (listWidth() - 4) / 2;
+            ((HomeLinkButton) button(byCount ? "sort_count" : "sort_name", 10, 64, filterWidth, () -> { byCount = !byCount; dirty = true; rebuildWidgets(); })).selected(byCount);
+            ((HomeLinkButton) button(variants ? "variants" : "aggregate", 14 + filterWidth, 64, filterWidth, () -> { variants = !variants; dirty = true; rebuildWidgets(); })).selected(variants);
+            var zoneButton = addRenderableWidget(HomeLinkButton.builder(zone.isEmpty() ? text("all_zones") : Component.literal(zoneLabel(zone)), button -> {
                 zone = cycleZone(zone, true); dirty = true; scroll = 0; rebuildWidgets();
-            }).bounds(leftPos + 194, topPos + 64, 174, 18).build());
+            }).bounds(leftPos + rightX() - 4, topPos + 64, rightWidth() + 4, HomeLinkTheme.CONTROL_HEIGHT).build());
             zoneButton.setTooltip(Tooltip.create(zoneButton.getMessage()));
-            button("close", 10, 194, 80, this::onClose);
-            button("locate", 94, 194, 124, () -> {
+            int closeWidth = listWidth() * 80 / 180;
+            int quantityWidth = rightWidth() * 54 / 170;
+            int takeWidth = rightWidth() * 88 / 170;
+            int locateWidth = imageWidth - 34 - closeWidth - quantityWidth - takeWidth;
+            int locateX = 14 + closeWidth;
+            int quantityX = locateX + locateWidth + 4;
+            button("close", 10, 194, closeWidth, this::onClose);
+            button("locate", locateX, 194, locateWidth, () -> {
                 if (selectedLocation != null && !pendingMode()) menu.send("locate", selectedLocation.linkId().toString(), "");
             });
             String draftQuantity = quantity == null ? "64" : quantity.getValue();
-            quantity = input(new EditBox(font, leftPos + 222, topPos + 194, 54, 18, text("quantity")));
+            quantity = input(new EditBox(font, leftPos + quantityX, topPos + 194, quantityWidth, 18, text("quantity")));
             quantity.setMaxLength(4);
             quantity.setFilter(value -> value.chars().allMatch(Character::isDigit));
             quantity.setValue(draftQuantity);
             quantity.setTooltip(Tooltip.create(text("quantity_hint", StorageWithdrawal.MAX_REQUEST)));
-            button("take", 280, 194, 88, this::withdrawQuantity);
+            button("take", quantityX + quantityWidth + 4, 194, takeWidth, this::withdrawQuantity);
         }
         dirty = true;
     }
@@ -225,7 +245,7 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
     }
 
     public Hovered hovered(double mouseX, double mouseY) {
-        if (manualOpen || management || mouseX < leftPos + 10 || mouseX >= leftPos + 190
+        if (manualOpen || management || mouseX < leftPos + 10 || mouseX >= leftPos + listEnd()
                 || mouseY < topPos + 85 || mouseY >= topPos + 187) return null;
         int line = (int) (mouseY - topPos - 85) / 17;
         int index = scroll + line;
@@ -386,70 +406,74 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
 
     @Override protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         refreshRows();
-        StorageTheme.frame(graphics, leftPos, topPos, imageWidth, imageHeight);
+        HomeLinkUi.frame(graphics, leftPos, topPos, imageWidth, imageHeight);
         if (manualOpen) { manual.render(graphics); return; }
-        StorageTheme.panel(graphics, leftPos + 9, topPos + 84, 182, 106);
-        if (!management) StorageTheme.panel(graphics, leftPos + 195, topPos + 84, 174, 106);
+        HomeLinkUi.panel(graphics, leftPos + 9, topPos + 84, listWidth() + 2, 106);
+        if (!management) HomeLinkUi.panel(graphics, leftPos + rightX() - 3, topPos + 84, rightWidth() + 4, 106);
         if (!management) for (int i = 0; i < 6 && scroll + i < rows.size(); i++) {
             View row = rows.get(scroll + i);
             int y = topPos + 85 + i * 17;
             if (row == selected) {
-                graphics.fill(leftPos + 10, y, leftPos + 190, y + 17, StorageTheme.HOVER);
-                graphics.fill(leftPos + 10, y + 2, leftPos + 12, y + 15, StorageTheme.ACCENT);
+                graphics.fill(leftPos + 10, y, leftPos + listEnd(), y + 17, HomeLinkTheme.HOVER);
+                graphics.fill(leftPos + 10, y + 2, leftPos + 12, y + 15, HomeLinkTheme.ACCENT);
             }
             graphics.renderItem(row.stack(), leftPos + 12, y);
-            graphics.drawString(font, font.plainSubstrByWidth(row.stack().getHoverName().getString(), 104), leftPos + 31, y + 4, StorageTheme.TEXT, false);
-            String count = Long.toString(row.count());
-            graphics.drawString(font, count, leftPos + 186 - font.width(count), y + 4, StorageTheme.ACCENT, false);
+            String count = HomeLinkUi.clip(font, Long.toString(row.count()), listWidth() / 2);
+            int countX = listEnd() - 4 - font.width(count);
+            graphics.drawString(font, clip(row.stack().getHoverName(), Math.min(104, countX - 37)), leftPos + 31, y + 4, HomeLinkTheme.TEXT, false);
+            graphics.drawString(font, count, leftPos + countX, y + 4, HomeLinkTheme.ACCENT, false);
         }
-        int locationX = management ? 12 : 200;
+        int locationX = management ? 12 : rightX() + 2;
+        int locationWidth = management ? listWidth() - 12 : rightWidth() - 10;
         int locationY = management ? 86 : 119;
         int height = management ? 17 : 23;
         for (int i = 0; i < (management ? 6 : 3) && locationScroll + i < locations.size(); i++) {
             StorageData.Location location = locations.get(locationScroll + i);
             int y = topPos + locationY + i * height;
-            if (location == selectedLocation) graphics.fill(leftPos + locationX - 2, y - 1, leftPos + locationX + 168, y + height - 1, StorageTheme.HOVER);
-            graphics.drawString(font, font.plainSubstrByWidth(inventoryLabel(location), 160), leftPos + locationX, y + 1, StorageTheme.TEXT, false);
+            if (location == selectedLocation) graphics.fill(leftPos + locationX - 2, y - 1,
+                    leftPos + locationX + locationWidth + 8, y + height - 1, HomeLinkTheme.HOVER);
+            graphics.drawString(font, HomeLinkUi.clip(font, inventoryLabel(location), locationWidth), leftPos + locationX, y + 1, HomeLinkTheme.TEXT, false);
             if (!management) {
                 long quantity = selected == null ? 0 : selected.locations().getOrDefault(location.position(), 0L);
                 String info = quantity + " · " + zoneLabel(location.zone());
-                graphics.drawString(font, font.plainSubstrByWidth(info, 160), leftPos + locationX, y + 11, StorageTheme.MUTED, false);
+                graphics.drawString(font, HomeLinkUi.clip(font, info, locationWidth), leftPos + locationX, y + 11, HomeLinkTheme.MUTED, false);
             }
         }
     }
 
     @Override protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         String heading = menu.clientName().isBlank() ? title.getString() : menu.clientName();
-        graphics.drawString(font, font.plainSubstrByWidth(heading, imageWidth - 74), 14, 11, StorageTheme.TEXT, false);
+        graphics.drawString(font, HomeLinkUi.clip(font, heading, imageWidth - 74), 14, 11, HomeLinkTheme.TEXT, false);
         var stats = menu.clientStats();
-        graphics.fill(imageWidth - 50, 11, imageWidth - 42, 19, 0xFF1D1F20);
-        graphics.fill(imageWidth - 48, 13, imageWidth - 44, 17, stats.connected() && menu.clientPowered() ? StorageTheme.ONLINE : StorageTheme.OFFLINE);
+        HomeLinkUi.statusDot(graphics, imageWidth - 50, 11,
+                stats.connected() && menu.clientPowered() ? HomeLinkTheme.ONLINE : HomeLinkTheme.OFFLINE);
         if (manualOpen) {
-            graphics.drawString(font, Component.translatable("manual.homelink_storage.title"), 10, 32, StorageTheme.ACCENT, false);
+            graphics.drawString(font, clip(Component.translatable("manual.homelink_storage.title"), imageWidth - 20), 10, 32, HomeLinkTheme.ACCENT, false);
             return;
         }
         Component summary = stats.connected() && !menu.clientPowered() ? text("no_power") : stats.connected() ? text("stats", stats.items(), stats.unique(), stats.inventories(),
                 stats.slots() == 0 ? 0 : (int) (100L * stats.occupied() / stats.slots())) : text("disconnected");
         long waiting = management ? 0 : pendingTotal();
-        String badge = waiting > 0 ? text("pending_badge", waiting).getString() : "";
+        String badge = waiting > 0 ? clip(text("pending_badge", waiting), (imageWidth - 20) / 2) : "";
         int badgeWidth = badge.isEmpty() ? 0 : font.width(badge) + 8;
-        graphics.drawString(font, font.plainSubstrByWidth(summary.getString(), imageWidth - 20 - badgeWidth), 10, 32, StorageTheme.MUTED, false);
-        if (!badge.isEmpty()) graphics.drawString(font, badge, imageWidth - 10 - font.width(badge), 32, StorageTheme.WARNING, false);
+        graphics.drawString(font, clip(summary, imageWidth - 20 - badgeWidth), 10, 32, HomeLinkTheme.MUTED, false);
+        if (!badge.isEmpty()) graphics.drawString(font, badge, imageWidth - 10 - font.width(badge), 32, HomeLinkTheme.WARNING, false);
         if (management) {
-            graphics.drawString(font, text("inventories"), 12, 70, StorageTheme.MUTED, false);
-            if (selectedLocation != null) graphics.drawString(font, statusLabel(selectedLocation), 198, 62, StorageTheme.status(selectedLocation.status()), false);
+            graphics.drawString(font, clip(text("inventories"), listWidth() - 4), 12, 70, HomeLinkTheme.MUTED, false);
+            if (selectedLocation != null) graphics.drawString(font, clip(statusLabel(selectedLocation), rightWidth()), rightX(), 62, StorageStatusColors.color(selectedLocation.status()), false);
         } else if (selected != null) {
-            graphics.drawString(font, font.plainSubstrByWidth(selected.stack().getHoverName().getString(), 170), 198, 88, StorageTheme.TEXT, false);
-            graphics.drawString(font, text("total", selected.count()), 198, 102, StorageTheme.ACCENT, false);
+            graphics.drawString(font, clip(selected.stack().getHoverName(), rightWidth()), rightX(), 88, HomeLinkTheme.TEXT, false);
+            int statusWidth = selectedLocation == null ? 0 : Math.min(rightWidth() / 2, font.width(statusLabel(selectedLocation)));
+            graphics.drawString(font, clip(text("total", selected.count()), rightWidth() - statusWidth - 4), rightX(), 102, HomeLinkTheme.ACCENT, false);
             if (selectedLocation != null) {
-                String status = statusLabel(selectedLocation).getString();
-                graphics.drawString(font, status, 368 - font.width(status), 102, StorageTheme.status(selectedLocation.status()), false);
+                String status = clip(statusLabel(selectedLocation), statusWidth);
+                graphics.drawString(font, status, imageWidth - 12 - font.width(status), 102, StorageStatusColors.color(selectedLocation.status()), false);
             }
-        } else graphics.drawString(font, text("empty"), 12, 94, StorageTheme.MUTED, false);
+        } else graphics.drawString(font, text("empty"), 12, 94, HomeLinkTheme.MUTED, false);
         if (selectedLocation != null && !management) {
             BlockPos pos = selectedLocation.position();
             int distance = minecraft.player == null ? 0 : (int) Math.sqrt(minecraft.player.distanceToSqr(pos.getCenter()));
-            graphics.drawString(font, text("position", pos.getX(), pos.getY(), pos.getZ(), distance), 198, 181, StorageTheme.MUTED, false);
+            graphics.drawString(font, clip(text("position", pos.getX(), pos.getY(), pos.getZ(), distance), rightWidth()), rightX(), 181, HomeLinkTheme.MUTED, false);
         }
     }
 
@@ -458,17 +482,42 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
         Hovered hovered = hovered(mouseX, mouseY);
         if (hovered != null) {
             List<Component> lines = new ArrayList<>(getTooltipFromContainerItem(hovered.stack()));
+            int row = scroll + (mouseY - topPos - 85) / 17;
+            lines.add(text("total", rows.get(row).count()));
             lines.add(text("click_hint").withStyle(ChatFormatting.DARK_GRAY));
             lines.add(text("click_hint_more").withStyle(ChatFormatting.DARK_GRAY));
             graphics.renderTooltip(font, lines, hovered.stack().getTooltipImage(), mouseX, mouseY);
+        } else {
+            Component heading = menu.clientName().isBlank() ? title : Component.literal(menu.clientName());
+            if (clippedTooltip(graphics, heading, 14, 11, imageWidth - 74, mouseX, mouseY) || manualOpen) return;
+            if (management && selectedLocation != null) {
+                clippedTooltip(graphics, statusLabel(selectedLocation), rightX(), 62, rightWidth(), mouseX, mouseY);
+            } else if (selected != null) {
+                if (clippedTooltip(graphics, selected.stack().getHoverName(), rightX(), 88, rightWidth(), mouseX, mouseY)) return;
+                int statusWidth = selectedLocation == null ? 0 : Math.min(rightWidth() / 2, font.width(statusLabel(selectedLocation)));
+                if (clippedTooltip(graphics, text("total", selected.count()), rightX(), 102, rightWidth() - statusWidth - 4, mouseX, mouseY)) return;
+                if (selectedLocation != null) {
+                    if (clippedTooltip(graphics, statusLabel(selectedLocation), imageWidth - 12 - statusWidth, 102, statusWidth, mouseX, mouseY)) return;
+                    BlockPos pos = selectedLocation.position();
+                    int distance = minecraft.player == null ? 0 : (int) Math.sqrt(minecraft.player.distanceToSqr(pos.getCenter()));
+                    clippedTooltip(graphics, text("position", pos.getX(), pos.getY(), pos.getZ(), distance), rightX(), 181, rightWidth(), mouseX, mouseY);
+                }
+            }
         }
+    }
+
+    private boolean clippedTooltip(GuiGraphics graphics, Component value, int x, int y, int available, int mouseX, int mouseY) {
+        if (font.width(value) <= available || mouseX < leftPos + x || mouseX >= leftPos + x + available
+                || mouseY < topPos + y || mouseY >= topPos + y + 9) return false;
+        graphics.renderTooltip(font, value, mouseX, mouseY);
+        return true;
     }
 
     @Override public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (manualOpen) return super.mouseClicked(mouseX, mouseY, button);
         int x = (int) mouseX - leftPos;
         int y = (int) mouseY - topPos;
-        if (!management && x >= 10 && x < 190 && y >= 85 && y < 187) {
+        if (!management && x >= 10 && x < listEnd() && y >= 85 && y < 187) {
             int index = scroll + (y - 85) / 17;
             if (index < rows.size() && button <= 2) {
                 long now = Util.getMillis();
@@ -480,10 +529,11 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
             return true;
         }
         if (button == 0) {
-            int locationX = management ? 10 : 198;
+            int locationX = management ? 10 : rightX();
+            int locationWidth = management ? listWidth() - 8 : rightWidth() + 2;
             int locationY = management ? 86 : 119;
             int height = management ? 17 : 23;
-            if (x >= locationX && x < locationX + 172 && y >= locationY && y < locationY + height * (management ? 6 : 3)) {
+            if (x >= locationX && x < locationX + locationWidth && y >= locationY && y < locationY + height * (management ? 6 : 3)) {
                 int index = locationScroll + (y - locationY) / height;
                 if (index < locations.size()) {
                     selectedLocation = locations.get(index);
@@ -498,9 +548,9 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
 
     @Override public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
         if (manualOpen) return manual.mouseScrolled(mouseX, mouseY, deltaY) || super.mouseScrolled(mouseX, mouseY, deltaX, deltaY);
-        if (mouseX >= leftPos + 10 && mouseX <= leftPos + 370 && mouseY >= topPos + 84 && mouseY <= topPos + 190) {
+        if (mouseX >= leftPos + 10 && mouseX <= leftPos + imageWidth - 10 && mouseY >= topPos + 84 && mouseY <= topPos + 190) {
             int change = deltaY > 0 ? -1 : 1;
-            if (management || mouseX >= leftPos + 194) locationScroll = Math.max(0, Math.min(locationScroll + change, locations.size() - (management ? 6 : 3)));
+            if (management || mouseX >= leftPos + rightX() - 4) locationScroll = Math.max(0, Math.min(locationScroll + change, locations.size() - (management ? 6 : 3)));
             else scroll = Math.max(0, Math.min(scroll + change, rows.size() - 6));
             return true;
         }
@@ -517,7 +567,7 @@ public final class StorageScreen extends AbstractContainerScreen<StorageMenu> {
             withdrawQuantity();
             return true;
         }
-        if (getFocused() instanceof EditBox edit && edit.isFocused() && keyCode != 256) return edit.keyPressed(keyCode, scanCode, modifiers);
+        if (getFocused() instanceof EditBox edit && edit.isFocused() && keyCode != 256 && keyCode != 258) return edit.keyPressed(keyCode, scanCode, modifiers);
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 }

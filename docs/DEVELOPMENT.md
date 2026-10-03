@@ -55,9 +55,12 @@ appareil et retire son appartenance en conservant les réseaux partagés.
 
 ## Interface et ressources
 
-`StorageTheme` reprend les constantes visuelles publiques du projet
-HomeLink Dashboard observé au commit `6f110fb96b6a090e4c2e30de242a6dee3f14a4e4`,
-sans créer de dépendance binaire. `StorageManualView` fournit six chapitres traduits,
+Le kit public `fr.lkdm.homecore.api.client.ui` de HomeCore 1.14.0 (API 1.9.0)
+fournit `HomeLinkTheme`, `HomeLinkUi`, `HomeLinkButton` et `HomeLinkScreenLayout`.
+Les classes locales `StorageTheme` et `StorageButton` sont supprimées ;
+`StorageStatusColors` conserve uniquement le mapping des états métier Storage
+vers les tons partagés. Aucun écran ne dépend de Dashboard.
+`StorageManualView` fournit six chapitres traduits,
 dont les Storage Pipes. Les appareils utilisent des géométries propres et des textures
 vanilla ; les pipes ont trois textures RGBA originales (verre, graphite, cuivre).
 Les modèles composites NeoForge séparent métal opaque et verre translucide.

@@ -1,6 +1,6 @@
 # Guide utilisateur — HomeLink Storage 1.4.0
 
-Installer HomeCore 1.13.0, HomeLink Energy 0.5.0 et HomeLink Storage 1.4.0 sur Minecraft 1.21.1 avec
+Installer HomeCore 1.14.0, HomeLink Energy 0.5.0 et HomeLink Storage 1.4.0 sur Minecraft 1.21.1 avec
 NeoForge 21.1.251 et Java 21, côté client et serveur. Les sept blocs sont
 craftables et disponibles dans l’onglet créatif HomeLink Storage.
 
@@ -177,7 +177,7 @@ que compté partiellement.
 
 ## English quick start
 
-Install HomeCore 1.13.0, HomeLink Energy 0.5.0 and HomeLink Storage 1.4.0 on both sides.
+Install HomeCore 1.14.0, HomeLink Energy 0.5.0 and HomeLink Storage 1.4.0 on both sides.
 For physical transport, connect containers with Storage Pipes, apply EXTRACT
 (container → pipe) at the source and INSERT (pipe → container) at the destination.
 Standalone transport needs the same owner at both endpoints, no Controller and no HE.

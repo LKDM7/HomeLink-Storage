@@ -45,8 +45,14 @@ Le [Storage Deposit](docs/STORAGE_DEPOSIT.md) ajoute un coffre d'entrée de 27 s
 une stack par seconde est rangée dans un inventaire connecté contenant déjà la même
 variante. Il se relie au Controller avec la clé USB de liaison existante.
 
-Installer `homelink_storage-1.4.0.jar`, `homecore-1.13.0.jar` et `homelink_energy-0.5.0.jar` dans le dossier
+Installer `homelink_storage-1.4.0.jar`, `homecore-1.14.0.jar` et `homelink_energy-0.5.0.jar` dans le dossier
 `mods` du client et du serveur NeoForge.
+
+### Interface commune / Shared UI
+
+Tous les écrans Storage, y compris CONNECTION / FILTER des Pipes et la récupération, utilisent le kit client public de **HomeCore 1.14.0**, API **1.9.0**. La palette et les boutons ne sont plus recopiés dans Storage : `StorageTheme` / `StorageButton` sont remplacés par `HomeLinkTheme`, `HomeLinkUi` et `HomeLinkButton`. Terminal/Controller et leurs manuels s'adaptent aux petites fenêtres ; Deposit conserve les coordonnées de ses slots. Les états métier restent propres à Storage.
+
+**Developer guidance (EN):** import `fr.lkdm.homecore.api.client.ui` only from client code. Use `HomeLinkTheme.CONTROL_HEIGHT`, `HomeLinkUi.frame(...)` / `panel(...)` / `input(...)`, `HomeLinkButton.builder(...)` / `navigation(...)`, and `HomeLinkScreenLayout.fit(...)` for new screens. Declare HomeCore `1.14.0` with metadata range `[1.14.0,2.0.0)`; no Dashboard installation or copied theme is needed, including future Pipes interfaces or Furnace. Composite builds use compatible adjacent HomeCore sources and do not update automatically from GitHub. See [UI migration](docs/UI_MIGRATION.md).
 
 ### Transport par tuyaux
 
@@ -110,8 +116,8 @@ git clone https://github.com/LKDM7/HomeLink-Energy ../HomeLinkEnergy
 
 L’emplacement de HomeCore est configurable avec
 `-Phomecore_dir=../autre-checkout`. Avec `-PuseLocalDependencies=true`, le composite Gradle compile la vraie API
-HomeCore 1.13.0 sans embarquer ses classes dans Storage. HomeLink Dashboard n’est pas
-une dépendance : Storage reprend son langage visuel et expose ses données au Dashboard
+HomeCore 1.14.0 sans embarquer ses classes dans Storage. HomeLink Dashboard n’est pas
+une dépendance : Storage utilise le kit visuel HomeCore et expose ses données au Dashboard
 uniquement au travers de HomeCore.
 
 ## Vérification

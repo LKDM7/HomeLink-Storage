@@ -1,7 +1,10 @@
 package fr.lkdm.homelink.storage.client.logistics;
 
-import fr.lkdm.homelink.storage.client.rendering.StorageTheme;
-import fr.lkdm.homelink.storage.client.widget.StorageButton;
+import fr.lkdm.homecore.api.client.ui.HomeLinkTheme;
+import fr.lkdm.homecore.api.client.ui.HomeLinkUi;
+import fr.lkdm.homecore.api.client.ui.HomeLinkButton;
+import fr.lkdm.homecore.api.client.ui.HomeLinkScreenLayout;
+
 import fr.lkdm.homelink.storage.logistics.network.PipeStatus;
 import fr.lkdm.homelink.storage.logistics.sync.PipePayloads;
 import java.util.ArrayList;
@@ -61,33 +64,34 @@ public final class PipeRecoveryScreen extends Screen {
     }
 
     @Override protected void init() {
-        frameWidth = Math.min(320, width - 8);
-        frameHeight = Math.min(222, height - 8);
-        left = (width - frameWidth) / 2;
-        top = (height - frameHeight) / 2;
+        var layout = HomeLinkScreenLayout.fit(width, height, 320, 222);
+        frameWidth = layout.width();
+        frameHeight = layout.height();
+        left = layout.x();
+        top = layout.y();
         boolean control = data.getBoolean("CanControl");
         boolean paused = data.getBoolean("Paused");
-        var pause = (StorageButton) StorageButton.builder(text(paused ? "resume" : "pause"), ignored -> send(paused ? "resume" : "pause", ""))
-                .bounds(left + 10, top + 34, 140, 18).build();
+        var pause = HomeLinkButton.builder(text(paused ? "resume" : "pause"), ignored -> send(paused ? "resume" : "pause", ""))
+                .bounds(left + 10, top + 34, 140, HomeLinkTheme.CONTROL_HEIGHT).build();
         pause.active = control;
         pause.selected(paused);
         pause.setTooltip(Tooltip.create(text("pause_help")));
         addRenderableWidget(pause);
-        var refresh = StorageButton.builder(text("refresh"), ignored -> send("open", "")).bounds(left + frameWidth - 110, top + 34, 100, 18).build();
+        var refresh = HomeLinkButton.builder(text("refresh"), ignored -> send("open", "")).bounds(left + frameWidth - 110, top + 34, 100, HomeLinkTheme.CONTROL_HEIGHT).build();
         addRenderableWidget(refresh);
         int listTop = top + 98;
         for (int i = 0; i < ROWS && scroll + i < rows.size(); i++) {
             Row row = rows.get(scroll + i);
             int y = listTop + i * 20;
             if (y + 18 > top + frameHeight - 30) break;
-            var take = StorageButton.builder(text("retrieve"), ignored -> send("retrieve", row.id()))
-                    .bounds(left + frameWidth - 86, y, 76, 18).build();
+            var take = HomeLinkButton.builder(text("retrieve"), ignored -> send("retrieve", row.id()))
+                    .bounds(left + frameWidth - 86, y, 76, HomeLinkTheme.CONTROL_HEIGHT).build();
             take.active = control && !row.uncertain();
             take.setTooltip(Tooltip.create(text("retrieve_help")));
             addRenderableWidget(take);
         }
-        addRenderableWidget(StorageButton.builder(Component.translatable("screen.homelink_storage.close"), ignored -> onClose())
-                .bounds(left + frameWidth - 90, top + frameHeight - 24, 80, 18).build());
+        addRenderableWidget(HomeLinkButton.builder(Component.translatable("screen.homelink_storage.close"), ignored -> onClose())
+                .bounds(left + frameWidth - 90, top + frameHeight - 24, 80, HomeLinkTheme.CONTROL_HEIGHT).build());
     }
 
     @Override public void onClose() {
@@ -98,38 +102,38 @@ public final class PipeRecoveryScreen extends Screen {
 
     @Override public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.renderBackground(graphics, mouseX, mouseY, partialTick);
-        StorageTheme.frame(graphics, left, top, frameWidth, frameHeight);
+        HomeLinkUi.frame(graphics, left, top, frameWidth, frameHeight);
     }
 
     @Override public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
-        graphics.drawString(font, font.plainSubstrByWidth(title.getString() + " — " + data.getString("Name"), frameWidth - 24), left + 12, top + 11, StorageTheme.TEXT, false);
+        graphics.drawString(font, font.plainSubstrByWidth(title.getString() + " — " + data.getString("Name"), frameWidth - 24), left + 12, top + 11, HomeLinkTheme.TEXT, false);
         String status = data.getString("Status");
         Component state = status.equals("NONE") ? text("no_circuit") : Component.translatable(PipeStatus.byName(status).key());
         if (data.getBoolean("Partial")) state = state.copy().append(" ").append(text("partial"));
-        graphics.drawString(font, font.plainSubstrByWidth(text("state", state).getString(), frameWidth - 24), left + 12, top + 58, StorageTheme.ACCENT, false);
+        graphics.drawString(font, font.plainSubstrByWidth(text("state", state).getString(), frameWidth - 24), left + 12, top + 58, HomeLinkTheme.ACCENT, false);
         graphics.drawString(font, font.plainSubstrByWidth(text("figures", data.getInt("Circuits"), data.getInt("Pipes"), data.getInt("Sources"),
-                data.getInt("Destinations")).getString(), frameWidth - 24), left + 12, top + 70, StorageTheme.MUTED, false);
+                data.getInt("Destinations")).getString(), frameWidth - 24), left + 12, top + 70, HomeLinkTheme.MUTED, false);
         graphics.drawString(font, font.plainSubstrByWidth(text("transit", data.getInt("InFlight"), data.getLong("InTransit"), data.getLong("PerMinute"),
-                data.getInt("Blocked")).getString(), frameWidth - 24), left + 12, top + 82, StorageTheme.MUTED, false);
+                data.getInt("Blocked")).getString(), frameWidth - 24), left + 12, top + 82, HomeLinkTheme.MUTED, false);
         int listTop = top + 98;
-        StorageTheme.panel(graphics, left + 9, listTop - 2, frameWidth - 18, ROWS * 20 + 2);
-        if (rows.isEmpty()) graphics.drawString(font, text("empty"), left + 14, listTop + 4, StorageTheme.MUTED, false);
+        HomeLinkUi.panel(graphics, left + 9, listTop - 2, frameWidth - 18, ROWS * 20 + 2);
+        if (rows.isEmpty()) graphics.drawString(font, text("empty"), left + 14, listTop + 4, HomeLinkTheme.MUTED, false);
         for (int i = 0; i < ROWS && scroll + i < rows.size(); i++) {
             Row row = rows.get(scroll + i);
             int y = listTop + i * 20;
             if (y + 18 > top + frameHeight - 30) break;
             graphics.renderItem(row.stack(), left + 12, y + 1);
             String label = row.count() + " × " + row.stack().getHoverName().getString();
-            graphics.drawString(font, font.plainSubstrByWidth(label, frameWidth - 128), left + 32, y + 1, StorageTheme.TEXT, false);
+            graphics.drawString(font, font.plainSubstrByWidth(label, frameWidth - 128), left + 32, y + 1, HomeLinkTheme.TEXT, false);
             Component reason = text(row.state().equals("RECOVERY") ? "row_recovery" : "row_blocked", Component.translatable(row.reason().key()));
-            graphics.drawString(font, font.plainSubstrByWidth(reason.getString(), frameWidth - 128), left + 32, y + 10, StorageTheme.WARNING, false);
+            graphics.drawString(font, font.plainSubstrByWidth(reason.getString(), frameWidth - 128), left + 32, y + 10, HomeLinkTheme.WARNING, false);
         }
         int unreadable = data.getInt("Unreadable");
         String result = data.getString("Result");
-        if (unreadable > 0) graphics.drawString(font, font.plainSubstrByWidth(text("unreadable", unreadable).getString(), frameWidth - 110), left + 12, top + frameHeight - 34, StorageTheme.OFFLINE, false);
+        if (unreadable > 0) graphics.drawString(font, font.plainSubstrByWidth(text("unreadable", unreadable).getString(), frameWidth - 110), left + 12, top + frameHeight - 34, HomeLinkTheme.OFFLINE, false);
         else if (!result.isEmpty()) graphics.drawString(font, font.plainSubstrByWidth(text("result." + result).getString(), frameWidth - 110),
-                left + 12, top + frameHeight - 19, result.equals("denied") || result.equals("unavailable") ? StorageTheme.WARNING : StorageTheme.ONLINE, false);
+                left + 12, top + frameHeight - 19, result.equals("denied") || result.equals("unavailable") ? HomeLinkTheme.WARNING : HomeLinkTheme.ONLINE, false);
     }
 
     @Override public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {

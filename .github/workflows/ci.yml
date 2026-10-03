@@ -14,6 +14,9 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: HomeLink-Storage
     env:
       GITHUB_ACTOR: ${{ github.actor }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -21,6 +24,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          path: HomeLink-Storage
+          persist-credentials: false
+      - name: Check out compatible HomeCore sources
+        uses: actions/checkout@v4
+        with:
+          repository: LKDM7/HomeCore
+          ref: dbcd1dc9fe694796780498ef1628903c89f6d04f
+          path: HomeCore
+          token: ${{ secrets.HOMELINK_REPOSITORIES_TOKEN || github.token }}
+          persist-credentials: false
+      - name: Check out compatible Energy sources
+        uses: actions/checkout@v4
+        with:
+          repository: LKDM7/HomeLink-Energy
+          ref: 57620158b6e29f47bccf951a6c253295dda73602
+          path: HomeLinkEnergy
+          token: ${{ secrets.HOMELINK_REPOSITORIES_TOKEN || github.token }}
           persist-credentials: false
       - uses: actions/setup-java@v4
         with:
@@ -30,25 +50,25 @@ jobs:
       - name: Validate pipe model assets
         run: python3 scripts/validate_pipe_models.py
       - name: Build, unit tests and release archive
-        run: bash gradlew build test verifyReleaseJar -PuseLocalDependencies=false --no-daemon --no-configuration-cache
+        run: bash gradlew build test verifyReleaseJar -PuseLocalDependencies=true -Phomecore_dir=../HomeCore -Penergy_dir=../HomeLinkEnergy --no-daemon --no-configuration-cache
       - name: Persistence write
-        run: bash gradlew runPersistence -PpersistencePass=write -PuseLocalDependencies=false --no-daemon --no-configuration-cache
+        run: bash gradlew runPersistence -PpersistencePass=write -PuseLocalDependencies=true -Phomecore_dir=../HomeCore -Penergy_dir=../HomeLinkEnergy --no-daemon --no-configuration-cache
       - name: Persistence read
-        run: bash gradlew runPersistence -PpersistencePass=read -PuseLocalDependencies=false --no-daemon --no-configuration-cache
+        run: bash gradlew runPersistence -PpersistencePass=read -PuseLocalDependencies=true -Phomecore_dir=../HomeCore -Penergy_dir=../HomeLinkEnergy --no-daemon --no-configuration-cache
       - name: Preserve reports and GameTest logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: storage-validation
           path: |
-            build/reports/
-            build/test-results/
-            build/gametest/logs/
-            build/persistence/logs/
-            build/validation/**/logs/
-            build/validation/**/screenshots/
+            HomeLink-Storage/build/reports/
+            HomeLink-Storage/build/test-results/
+            HomeLink-Storage/build/gametest/logs/
+            HomeLink-Storage/build/persistence/logs/
+            HomeLink-Storage/build/validation/**/logs/
+            HomeLink-Storage/build/validation/**/screenshots/
       - name: Preserve release JARs separately
         uses: actions/upload-artifact@v4
         with:
           name: storage-jars
-          path: build/libs/*.jar
+          path: HomeLink-Storage/build/libs/*.jar

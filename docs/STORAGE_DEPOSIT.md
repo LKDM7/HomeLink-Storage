@@ -69,7 +69,7 @@ Workbench de HomeCore 1.10.0.
 Résultat : un Storage Deposit. Le caisson possède un bac supérieur encastré, une
 façade cyan, des bordures en cuivre et des aérations. Les textures de matériaux
 vanilla reprennent la palette graphite/cuivre du Controller et du Terminal.
-Le GUI utilise leur cadre métallique et leurs composants StorageTheme.
+Le GUI utilise le cadre métallique et les contrôles du kit UI public HomeCore.
 
 ## Connexion, sauvegarde et permissions
 

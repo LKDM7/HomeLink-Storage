@@ -1,7 +1,11 @@
 package fr.lkdm.homelink.storage.client.logistics;
 
-import fr.lkdm.homelink.storage.client.rendering.StorageTheme;
-import fr.lkdm.homelink.storage.client.widget.StorageButton;
+import fr.lkdm.homecore.api.client.ui.HomeLinkTheme;
+import fr.lkdm.homecore.api.client.ui.HomeLinkUi;
+import fr.lkdm.homecore.api.client.ui.HomeLinkButton;
+import fr.lkdm.homecore.api.client.ui.HomeLinkScreenLayout;
+import fr.lkdm.homelink.storage.client.rendering.StorageStatusColors;
+
 import fr.lkdm.homelink.storage.logistics.filter.FilterMode;
 import fr.lkdm.homelink.storage.logistics.filter.FlowMode;
 import fr.lkdm.homelink.storage.logistics.network.PipeStatus;
@@ -132,35 +136,36 @@ public final class PipeScreen extends Screen {
     }
 
     @Override protected void init() {
-        frameWidth = Math.min(320, width - 8);
-        frameHeight = Math.min(222, height - 8);
-        left = (width - frameWidth) / 2;
-        top = (height - frameHeight) / 2;
-        StorageButton connection = add(text("tab_connection"), left + 10, top + 34, 96, () -> setFilterTab(false));
-        connection.selected(!filterTab);
-        StorageButton filterButton = add(text("tab_filter"), left + 110, top + 34, 96, () -> setFilterTab(true));
-        filterButton.selected(filterTab);
+        var layout = HomeLinkScreenLayout.fit(width, height, 320, 222);
+        frameWidth = layout.width();
+        frameHeight = layout.height();
+        left = layout.x();
+        top = layout.y();
+        HomeLinkButton connection = add(text("tab_connection"), left + 10, top + 34, 96, () -> setFilterTab(false));
+        connection.navigation(!filterTab);
+        HomeLinkButton filterButton = add(text("tab_filter"), left + 110, top + 34, 96, () -> setFilterTab(true));
+        filterButton.navigation(filterTab);
         if (filterTab) initFilter(); else initConnection();
         int footer = top + frameHeight - 24;
         int third = (frameWidth - 28) / 3;
-        StorageButton apply = add(text("apply"), left + 10, footer, third, this::apply);
+        HomeLinkButton apply = add(text("apply"), left + 10, footer, third, this::apply);
         apply.active = canEdit && mode != null && allowed(mode) && (dirty() || !armed);
-        StorageButton cancel = add(text("cancel"), left + 14 + third, footer, third, () -> {
+        HomeLinkButton cancel = add(text("cancel"), left + 14 + third, footer, third, () -> {
             mode = savedMode; filter = savedFilter; items.clear(); items.addAll(savedItems); result = ""; gridDirty = true; rebuildWidgets();
         });
         cancel.active = dirty();
         add(Component.translatable("screen.homelink_storage.close"), left + 18 + third * 2, footer, frameWidth - 28 - third * 2, this::onClose);
     }
 
-    private StorageButton add(Component label, int x, int y, int width, Runnable action) {
-        StorageButton button = (StorageButton) StorageButton.builder(label, ignored -> action.run()).bounds(x, y, width, 18).build();
+    private HomeLinkButton add(Component label, int x, int y, int width, Runnable action) {
+        HomeLinkButton button = HomeLinkButton.builder(label, ignored -> action.run()).bounds(x, y, width, HomeLinkTheme.CONTROL_HEIGHT).build();
         button.setTooltip(Tooltip.create(label));
         return addRenderableWidget(button);
     }
 
     private void initConnection() {
         FlowMode shown = mode == null ? (allowed(FlowMode.EXTRACT) ? FlowMode.EXTRACT : FlowMode.INSERT) : mode;
-        StorageButton direction = add(Component.literal("[ ").append(text(shown == FlowMode.INSERT ? "insert" : "extract")).append(" ]"),
+        HomeLinkButton direction = add(Component.literal("[ ").append(text(shown == FlowMode.INSERT ? "insert" : "extract")).append(" ]"),
                 left + 10, top + 88, frameWidth - 20, () -> {
                     FlowMode next = mode == null ? shown : mode.toggled();
                     if (allowed(next)) mode = next;
@@ -181,7 +186,7 @@ public final class PipeScreen extends Screen {
     }
 
     private void initFilter() {
-        StorageButton modeButton = add(text(filter == FilterMode.WHITELIST ? "whitelist" : "blacklist"), left + 10, top + 58, 110, () -> {
+        HomeLinkButton modeButton = add(text(filter == FilterMode.WHITELIST ? "whitelist" : "blacklist"), left + 10, top + 58, 110, () -> {
             filter = filter.toggled();
             rebuildWidgets();
         });
@@ -190,13 +195,13 @@ public final class PipeScreen extends Screen {
         search = new EditBox(font, left + 126, top + 58, frameWidth - 136, 18, text("search"));
         search.setMaxLength(64);
         search.setHint(text("search").withStyle(ChatFormatting.DARK_GRAY));
-        search.setTextColor(StorageTheme.TEXT);
+        HomeLinkUi.input(search);
         search.setValue(query);
         search.setResponder(value -> { query = value; scroll = 0; gridDirty = true; });
         addRenderableWidget(search);
-        StorageButton only = add(text("selected_only"), left + 10, top + 80, 110, () -> { selectedOnly = !selectedOnly; scroll = 0; gridDirty = true; rebuildWidgets(); });
+        HomeLinkButton only = add(text("selected_only"), left + 10, top + 80, 110, () -> { selectedOnly = !selectedOnly; scroll = 0; gridDirty = true; rebuildWidgets(); });
         only.selected(selectedOnly);
-        StorageButton clear = add(text("clear"), left + frameWidth - 110, top + 80, 100, () -> { items.clear(); gridDirty = true; rebuildWidgets(); });
+        HomeLinkButton clear = add(text("clear"), left + frameWidth - 110, top + 80, 100, () -> { items.clear(); gridDirty = true; rebuildWidgets(); });
         clear.active = canEdit && !items.isEmpty();
     }
 
@@ -254,19 +259,18 @@ public final class PipeScreen extends Screen {
 
     @Override public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.renderBackground(graphics, mouseX, mouseY, partialTick);
-        StorageTheme.frame(graphics, left, top, frameWidth, frameHeight);
+        HomeLinkUi.frame(graphics, left, top, frameWidth, frameHeight);
     }
 
     @Override public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
         String container = data.getString("Name").isEmpty() ? blockName() : data.getString("Name");
-        graphics.drawString(font, font.plainSubstrByWidth(title.getString() + " — " + container, frameWidth - 40), left + 12, top + 11, StorageTheme.TEXT, false);
-        int lamp = switch (status.lamp()) { case ACTIVE -> StorageTheme.ONLINE; case WARNING -> StorageTheme.WARNING; default -> StorageTheme.OFFLINE; };
-        graphics.fill(left + frameWidth - 22, top + 11, left + frameWidth - 14, top + 19, 0xFF1D1F20);
-        graphics.fill(left + frameWidth - 20, top + 13, left + frameWidth - 16, top + 17, lamp);
+        graphics.drawString(font, font.plainSubstrByWidth(title.getString() + " — " + container, frameWidth - 40), left + 12, top + 11, HomeLinkTheme.TEXT, false);
+        int lamp = switch (status.lamp()) { case ACTIVE -> HomeLinkTheme.ONLINE; case WARNING -> HomeLinkTheme.WARNING; default -> HomeLinkTheme.OFFLINE; };
+        HomeLinkUi.statusDot(graphics, left + frameWidth - 22, top + 11, lamp);
         if (filterTab) renderFilter(graphics, mouseX, mouseY); else renderConnection(graphics, container);
         if (!result.isEmpty()) {
-            int color = result.equals("saved") ? StorageTheme.ONLINE : StorageTheme.WARNING;
+            int color = result.equals("saved") ? HomeLinkTheme.ONLINE : HomeLinkTheme.WARNING;
             Component message = text("result." + result);
             graphics.drawString(font, font.plainSubstrByWidth(message.getString(), frameWidth - 24), left + 12, top + frameHeight - 38, color, false);
         }
@@ -283,33 +287,33 @@ public final class PipeScreen extends Screen {
 
     private void renderConnection(GuiGraphics graphics, String container) {
         int y = top + 60;
-        line(graphics, text("container", container), y, StorageTheme.TEXT);
-        line(graphics, text("side", Component.translatable("direction.homelink_storage." + side.getSerializedName())), y + 12, StorageTheme.MUTED);
+        line(graphics, text("container", container), y, HomeLinkTheme.TEXT);
+        line(graphics, text("side", Component.translatable("direction.homelink_storage." + side.getSerializedName())), y + 12, HomeLinkTheme.MUTED);
         y = top + 112;
-        if (mode == null) line(graphics, text("to_configure"), y, StorageTheme.WARNING);
-        else line(graphics, text(mode == FlowMode.INSERT ? "insert_help" : "extract_help"), y, StorageTheme.ACCENT);
-        if (dirty() || !armed && mode != null) line(graphics, text(canEdit ? "modified" : "read_only"), y + 12, StorageTheme.MUTED);
-        else if (!canEdit) line(graphics, text("read_only"), y + 12, StorageTheme.MUTED);
+        if (mode == null) line(graphics, text("to_configure"), y, HomeLinkTheme.WARNING);
+        else line(graphics, text(mode == FlowMode.INSERT ? "insert_help" : "extract_help"), y, HomeLinkTheme.ACCENT);
+        if (dirty() || !armed && mode != null) line(graphics, text(canEdit ? "modified" : "read_only"), y + 12, HomeLinkTheme.MUTED);
+        else if (!canEdit) line(graphics, text("read_only"), y + 12, HomeLinkTheme.MUTED);
         y += 28;
         if (y + 10 < top + frameHeight - 40) {
-            StorageTheme.panel(graphics, left + 10, y - 3, frameWidth - 20, 28);
-            line(graphics, text("status", Component.translatable(status.key())), y, StorageTheme.status(switch (status.lamp()) {
+            HomeLinkUi.panel(graphics, left + 10, y - 3, frameWidth - 20, 28);
+            line(graphics, text("status", Component.translatable(status.key())), y, StorageStatusColors.color(switch (status.lamp()) {
                 case ACTIVE -> "ONLINE"; case WARNING -> "WARNING"; default -> "OFFLINE"; }));
             String controller = data.getString("Controller");
             PipeStatus circuit = PipeStatus.byName(data.getString("Circuit"));
             Component controllerLine = data.getBoolean("Autonomous") ? text("autonomous") : !controller.isEmpty() ? text("controller", controller)
                     : circuit == PipeStatus.NO_CONTROLLER ? text("no_controller")
                     : text("controller", Component.translatable(circuit.key()));
-            line(graphics, controllerLine, y + 12, StorageTheme.MUTED);
+            line(graphics, controllerLine, y + 12, HomeLinkTheme.MUTED);
         }
     }
 
     private void renderFilter(GuiGraphics graphics, int mouseX, int mouseY) {
         refreshGrid();
         String count = text("selected", items.size(), maxFilter).getString();
-        graphics.drawString(font, count, left + 126 + (frameWidth - 246 - font.width(count)) / 2, top + 85, StorageTheme.ACCENT, false);
+        graphics.drawString(font, count, left + 126 + (frameWidth - 246 - font.width(count)) / 2, top + 85, HomeLinkTheme.ACCENT, false);
         int columns = columns(), rows = rows(), x0 = left + 10, y0 = gridTop();
-        StorageTheme.panel(graphics, x0 - 1, y0 - 1, columns * SLOT + 2, rows * SLOT + 2);
+        HomeLinkUi.panel(graphics, x0 - 1, y0 - 1, columns * SLOT + 2, rows * SLOT + 2);
         int hovered = cellAt(mouseX, mouseY);
         for (int row = 0; row < rows; row++) for (int column = 0; column < columns; column++) {
             int index = (scroll + row) * columns + column;
@@ -317,19 +321,19 @@ public final class PipeScreen extends Screen {
             Grid cell = grid.get(index);
             int x = x0 + column * SLOT, y = y0 + row * SLOT;
             boolean selected = items.contains(cell.id());
-            if (index == hovered || index == keyboardCell) graphics.fill(x, y, x + SLOT, y + SLOT, StorageTheme.HOVER);
+            if (index == hovered || index == keyboardCell) graphics.fill(x, y, x + SLOT, y + SLOT, HomeLinkTheme.HOVER);
             graphics.renderItem(cell.icon(), x + 1, y + 1);
             if (selected) {
-                graphics.renderOutline(x, y, SLOT, SLOT, StorageTheme.ACCENT);
+                graphics.renderOutline(x, y, SLOT, SLOT, HomeLinkTheme.ACCENT);
                 graphics.fill(x + SLOT - 7, y + 1, x + SLOT - 1, y + 7, 0xFF1D1F20);
-                graphics.drawString(font, "✔", x + SLOT - 7, y, StorageTheme.ACCENT, false);
+                graphics.drawString(font, "✔", x + SLOT - 7, y, HomeLinkTheme.ACCENT, false);
             }
         }
-        if (grid.isEmpty()) graphics.drawString(font, text("no_match"), x0 + 4, y0 + 5, StorageTheme.MUTED, false);
+        if (grid.isEmpty()) graphics.drawString(font, text("no_match"), x0 + 4, y0 + 5, HomeLinkTheme.MUTED, false);
         int max = maxScroll();
         if (max > 0) {
             int track = rows * SLOT, thumb = Math.max(8, track * rows / (rows + max)), offset = (track - thumb) * scroll / max;
-            graphics.fill(x0 + columns * SLOT + 3, y0 + offset, x0 + columns * SLOT + 5, y0 + offset + thumb, StorageTheme.ACCENT);
+            graphics.fill(x0 + columns * SLOT + 3, y0 + offset, x0 + columns * SLOT + 5, y0 + offset + thumb, HomeLinkTheme.ACCENT);
         }
         if (hovered >= 0) {
             Grid cell = grid.get(hovered);

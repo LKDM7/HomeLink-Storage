@@ -1,5 +1,7 @@
 package fr.lkdm.homelink.storage.client.rendering;
 
+import fr.lkdm.homecore.api.client.ui.HomeLinkTheme;
+
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import fr.lkdm.homelink.storage.HomeLinkStorage;
@@ -49,8 +51,8 @@ public final class CoverageRenderer {
             double x0 = chunk.x() << 4, z0 = chunk.z() << 4, x1 = x0 + 16, z1 = z0 + 16;
             double dx = Mth.clamp(camera.x, x0, x1) - camera.x, dz = Mth.clamp(camera.z, z0, z1) - camera.z;
             if (dx * dx + dz * dz > MAX_DISTANCE * MAX_DISTANCE) continue;
-            int color = chunk.focus() ? (chunk.active() ? StorageTheme.ACCENT : StorageTheme.OFFLINE)
-                    : chunk.active() ? StorageTheme.ONLINE : StorageTheme.OFFLINE;
+            int color = chunk.focus() ? (chunk.active() ? HomeLinkTheme.ACCENT : HomeLinkTheme.OFFLINE)
+                    : chunk.active() ? HomeLinkTheme.ONLINE : HomeLinkTheme.OFFLINE;
             float alpha = chunk.focus() ? pulse : 0.7F;
             // Fence: a bright rail at the viewer's feet, fainter rails every eight blocks, corner posts.
             double ground = Math.max(low, feet) + 0.05;
@@ -72,8 +74,8 @@ public final class CoverageRenderer {
             float x0 = chunk.x() << 4, z0 = chunk.z() << 4, x1 = x0 + 16, z1 = z0 + 16;
             double dx = Mth.clamp(camera.x, x0, x1) - camera.x, dz = Mth.clamp(camera.z, z0, z1) - camera.z;
             if (dx * dx + dz * dz > MAX_DISTANCE * MAX_DISTANCE) continue;
-            int color = chunk.focus() ? (chunk.active() ? StorageTheme.ACCENT : StorageTheme.OFFLINE)
-                    : chunk.active() ? StorageTheme.ONLINE : StorageTheme.OFFLINE;
+            int color = chunk.focus() ? (chunk.active() ? HomeLinkTheme.ACCENT : HomeLinkTheme.OFFLINE)
+                    : chunk.active() ? HomeLinkTheme.ONLINE : HomeLinkTheme.OFFLINE;
             float alpha = (chunk.focus() ? 0.35F : 0.2F) * pulse;
             float y0 = (float) ground, y1 = (float) ground + 3;
             wall(pose, quads, x0, z0, x1, z0, y0, y1, color, alpha);

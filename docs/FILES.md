@@ -17,9 +17,9 @@
 - `menu/StorageMenu.java`
 - `network/StorageData.java`, `StoragePackets.java`, `StorageRequestBudget.java`
 - `client/StorageClient.java`
-- `client/rendering/LocateRenderer.java`, `StorageTheme.java`
+- `client/rendering/LocateRenderer.java`, `StorageStatusColors.java`
 - `client/screen/StorageScreen.java`
-- `client/widget/StorageButton.java`, `StorageManualView.java`
+- `client/widget/StorageManualView.java` ; boutons et rendu partagés fournis par HomeCore
 - `logistics/pipe/StoragePipeBlock.java`, `StoragePipeBlockEntity.java`
 - `logistics/network/PipeNetworkManager.java`
 - `logistics/transit/TransitLedger.java`, `TransitPacket.java`

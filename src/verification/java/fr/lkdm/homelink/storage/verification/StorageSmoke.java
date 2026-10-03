@@ -92,8 +92,11 @@ public final class StorageSmoke {
                         check(client.getBlockRenderer().getBlockModel(block.defaultBlockState()) != client.getModelManager().getMissingModel(), "Missing block model " + block);
                         check(client.getItemRenderer().getModel(block.asItem().getDefaultInstance(), client.level, client.player, 0) != client.getModelManager().getMissingModel(), "Missing item model " + block);
                     }
-                    StorageScreen screen = (StorageScreen) client.screen;
-                    screen.toggleManual();
+                    phase = 18;
+                }
+                case 18 -> {
+                    if (!StorageUiChecks.run(client, "terminal")) return;
+                    ((StorageScreen) client.screen).toggleManual();
                     visibleTicks = 0;
                     phase = 20;
                 }
@@ -137,6 +140,7 @@ public final class StorageSmoke {
                 }
                 case 91 -> {
                     if (++visibleTicks < 20) return;
+                    if (!StorageUiChecks.run(client, "controller")) return;
                     net.minecraft.client.Screenshot.grab(client.gameDirectory, "storage-controller.png", client.getMainRenderTarget(), message -> LogUtils.getLogger().info("STORAGE_CONTROLLER_SCREENSHOT {}", message.getString()));
                     LogUtils.getLogger().info("STORAGE_CONTROLLER_SCREEN_CHECKS_OK management=true item_rows=0");
                     phase = 92;

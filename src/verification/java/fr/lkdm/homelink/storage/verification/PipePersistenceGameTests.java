@@ -57,10 +57,13 @@ public final class PipePersistenceGameTests {
             var pipe=(StoragePipeBlockEntity)level.getBlockEntity(pos);
             for(Direction side:List.of(Direction.WEST,Direction.EAST))pipe.configOrCreate(side).apply(side==Direction.WEST?FlowMode.EXTRACT:FlowMode.INSERT,FilterMode.BLACKLIST,Set.of(),owner,null,null,"minecraft:barrel");
             pipe.configChanged();manager.settleNow();cargo.getFirst().nextAttempt=0;
-            for(int i=0;i<9;i++)manager.tick();
-            h.assertTrue(((Container)level.getBlockEntity(base.east(2))).getItem(0).getCount()==16 && manager.ledger().get(cargo.getFirst().id)==null,"Standalone restart could not resume delivery");
-            com.mojang.logging.LogUtils.getLogger().info("STORAGE_PIPE_STANDALONE_PERSISTENCE_READ_OK items=16");
-            h.succeed();
+            // Retry scheduling and queued chunk notifications use real server time.
+            // Repeated manager.tick() calls within one game tick cannot advance that time.
+            h.succeedWhen(()->{
+                h.assertTrue(((Container)level.getBlockEntity(base.east(2))).getItem(0).getCount()==16
+                        && manager.ledger().get(cargo.getFirst().id)==null,"Standalone restart could not resume delivery");
+                com.mojang.logging.LogUtils.getLogger().info("STORAGE_PIPE_STANDALONE_PERSISTENCE_READ_OK items=16");
+            });
             });return;
         }
         com.mojang.logging.LogUtils.getLogger().info("STORAGE_PIPE_STANDALONE_PERSISTENCE_{}_OK items=16",pass.toUpperCase(java.util.Locale.ROOT));

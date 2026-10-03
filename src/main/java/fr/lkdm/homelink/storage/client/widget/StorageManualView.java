@@ -1,6 +1,9 @@
 package fr.lkdm.homelink.storage.client.widget;
 
-import fr.lkdm.homelink.storage.client.rendering.StorageTheme;
+import fr.lkdm.homecore.api.client.ui.HomeLinkTheme;
+import fr.lkdm.homecore.api.client.ui.HomeLinkUi;
+import fr.lkdm.homecore.api.client.ui.HomeLinkButton;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -40,23 +43,23 @@ public final class StorageManualView {
                 for (int i = 0; i < spans.length; i++) {
                     boolean emphasis = heading || i % 2 == 1;
                     content.append(Component.literal(spans[i]).withStyle(style -> style
-                            .withColor(emphasis ? StorageTheme.ACCENT : StorageTheme.TEXT).withBold(heading)));
+                            .withColor(emphasis ? HomeLinkTheme.ACCENT : HomeLinkTheme.TEXT).withBold(heading)));
                 }
                 for (var line : font.split(content, width - 28)) wrapped.add(new Line(line, heading));
             }
         }
         lines = List.copyOf(wrapped);
         offset = Math.min(offset, maxOffset());
-        Button previous = StorageButton.builder(Component.literal("<"), ignored -> changeChapter(-1)).bounds(x, y, 24, 18).build();
+        Button previous = HomeLinkButton.builder(Component.literal("<"), ignored -> changeChapter(-1)).bounds(x, y, 24, HomeLinkTheme.CONTROL_HEIGHT).build();
         previous.active = chapter > 0;
         previous.setTooltip(Tooltip.create(text("previous")));
         add.accept(previous);
-        Button next = StorageButton.builder(Component.literal(">"), ignored -> changeChapter(1)).bounds(x + width - 24, y, 24, 18).build();
+        Button next = HomeLinkButton.builder(Component.literal(">"), ignored -> changeChapter(1)).bounds(x + width - 24, y, 24, HomeLinkTheme.CONTROL_HEIGHT).build();
         next.active = chapter < CHAPTERS.length - 1;
         next.setTooltip(Tooltip.create(text("next")));
         add.accept(next);
-        up = StorageButton.builder(text("up"), ignored -> scroll(-visibleLines())).bounds(x, y + height - 18, (width - 4) / 2, 18).build();
-        down = StorageButton.builder(text("down"), ignored -> scroll(visibleLines())).bounds(x + (width - 4) / 2 + 4, y + height - 18, (width - 4) / 2, 18).build();
+        up = HomeLinkButton.builder(text("up"), ignored -> scroll(-visibleLines())).bounds(x, y + height - 18, (width - 4) / 2, HomeLinkTheme.CONTROL_HEIGHT).build();
+        down = HomeLinkButton.builder(text("down"), ignored -> scroll(visibleLines())).bounds(x + (width - 4) / 2 + 4, y + height - 18, (width - 4) / 2, HomeLinkTheme.CONTROL_HEIGHT).build();
         add.accept(up); add.accept(down);
         updateButtons();
     }
@@ -72,24 +75,24 @@ public final class StorageManualView {
 
     public void render(GuiGraphics graphics) {
         String title = (chapter + 1) + "/" + CHAPTERS.length + "  " + text(CHAPTERS[chapter] + ".title").getString();
-        graphics.drawCenteredString(font, font.plainSubstrByWidth(title, width - 60), x + width / 2, y + 5, StorageTheme.ACCENT);
-        StorageTheme.panel(graphics, x, y + 23, width, height - 45);
+        graphics.drawCenteredString(font, font.plainSubstrByWidth(title, width - 60), x + width / 2, y + 5, HomeLinkTheme.ACCENT);
+        HomeLinkUi.panel(graphics, x, y + 23, width, height - 45);
         graphics.enableScissor(x + 4, y + 26, x + width - 4, y + height - 23);
         for (int i = offset; i < Math.min(lines.size(), offset + visibleLines()); i++) {
             Line line = lines.get(i);
             int rowY = y + 28 + (i - offset) * 14;
             if (line.heading()) {
-                graphics.fill(x + 6, rowY - 2, x + width - 9, rowY + 11, StorageTheme.HEADER);
-                graphics.fill(x + 6, rowY - 2, x + 8, rowY + 11, StorageTheme.ACCENT);
+                graphics.fill(x + 6, rowY - 2, x + width - 9, rowY + 11, HomeLinkTheme.HEADER);
+                graphics.fill(x + 6, rowY - 2, x + 8, rowY + 11, HomeLinkTheme.ACCENT);
             }
-            graphics.drawString(font, line.text(), x + 12, rowY, StorageTheme.TEXT, false);
+            graphics.drawString(font, line.text(), x + 12, rowY, HomeLinkTheme.TEXT, false);
         }
         graphics.disableScissor();
         if (maxOffset() > 0) {
             int track = Math.max(1, height - 55);
             int thumb = Math.max(6, track * visibleLines() / lines.size());
             int top = y + 28 + (track - thumb) * offset / maxOffset();
-            graphics.fill(x + width - 5, top, x + width - 3, top + thumb, StorageTheme.ACCENT);
+            graphics.fill(x + width - 5, top, x + width - 3, top + thumb, HomeLinkTheme.ACCENT);
         }
     }
 
