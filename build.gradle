@@ -265,4 +265,6 @@ tasks.register('publishToCurseForge', net.darkhax.curseforgegradle.TaskPublishCu
     mainFile.addModLoader('NeoForge')
     mainFile.addRequirement('homecore')
     mainFile.addRequirement('homelink-energy')
+    mainFile.addOptional('jei')
+    mainFile.addOptional('roughly-enough-items')
 }
