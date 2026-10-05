@@ -145,4 +145,4 @@ standard NeoForge ; chaque mod tiers n’a pas été testé
 individuellement. Le test optionnel Dashboard utilise le vrai checkout voisin
 `../HomeLink` (configurable avec `-Pdashboard_dir`).
 
-Licence Apache-2.0, auteur LKDM.
+Licence : tous droits réservés, auteur LKDM. Voir [LICENSE](LICENSE).
